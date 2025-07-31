@@ -75,7 +75,6 @@ protected:
     float scale;
     
     Loss decay[ReverbTaps];
-    ConvolveReverb<revSize> *conv;
     float out;
 };
 

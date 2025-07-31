@@ -86,8 +86,13 @@ float sum4 (vec4 x)
 
 void ms4(float *x, float *y, float *z, int N)
 {
-    vec4 *x4 = (vec4*) x;
-    vec4 *z4 = (vec4*) z;
+    // vec4 *x4 = (vec4*) x;
+    // vec4 *z4 = (vec4*) z;
+    vec4 x4vec = simde_mm_loadu_ps(x);
+    vec4 *x4 = &x4vec;
+
+    vec4 z4vec = simde_mm_loadu_ps(z);
+    vec4 *z4 = &z4vec;
 
     int N4 = N >> 2;
     vec4 *zend = z4 + N4 + 1;
@@ -97,8 +102,10 @@ void ms4(float *x, float *y, float *z, int N)
     while (z4 < zend)
     {
         vec4 w = simde_mm_loadu_ps(y);
-        v = simde_mm_sub_ps (simde_mm_shuffle_ps (w, w, SIMDE_MM_SHUFFLE(0, 1, 2, 3)), *x4);
-        *z4 = simde_mm_mul_ps(v,v);
+        // v = simde_mm_sub_ps (simde_mm_shuffle_ps (w, w, SIMDE_MM_SHUFFLE(0, 1, 2, 3)), *x4);
+        // *z4 = simde_mm_mul_ps(v,v);
+        v = simde_mm_sub_ps(simde_mm_shuffle_ps(w, w, SIMDE_MM_SHUFFLE(0, 1, 2, 3)), *x4);
+        z4vec = simde_mm_mul_ps(v, v);
         x4++;
         y -= 4;
         z4++;
