@@ -107,6 +107,8 @@ public:
     bool isDone();
     float maxEnergy;
     float energy;
+    // float lastOutput_ = 0.0f;
+    // float currentOutput_ = 0.0f;
     Delay<65536> outputdelay;
     static void fillFrequencyTable();
     static double freqTable[NUM_NOTES];
@@ -140,9 +142,12 @@ protected:
     float f;
     int nstrings;
 
-    dwgs* stringT[3];
-    dwgs* stringHT[3];
-    Hammer* hammer;
+    // dwgs* stringT[3];
+    // dwgs* stringHT[3];
+    // Hammer* hammer;
+    dwgs stringT[3];
+    dwgs stringHT[3];
+    Hammer hammer;
 
     alignas(32) float outUp[8];
     alignas(32) float outDown[8];
@@ -186,15 +191,18 @@ protected:
     friend class PianoNote;
     Value vals[NumParams];
     PianoNote* voiceList;
-    PianoNote* noteArray[NUM_NOTES];
+    // PianoNote* noteArray[NUM_NOTES];
+    std::array<std::unique_ptr<PianoNote>, NUM_NOTES> noteArray;
     int blockSize;
     float Fs;
-    float* input = nullptr;
+    // float* input = nullptr;
+    std::vector<float> input;
 
-#ifdef FDN_REVERB
-    Reverb *soundboard;
+#if FDN_REVERB
+    std::unique_ptr<Reverb> soundboard;
+    // Reverb *soundboard;
 #else
-    ConvolveReverb<revSize> *soundboard;
+    std::unique_ptr<ConvolveReverb<revSize>> soundboard;
 #endif
 };
 

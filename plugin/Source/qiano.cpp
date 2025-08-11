@@ -1,6 +1,8 @@
+#include <cmath>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include "reverb.h"
 #include "utils.h"
 #include "qiano.h"
 #include <string.h>
@@ -143,10 +145,13 @@ float PianoNote::goDownDelayed()
     if (tDown == 0)
     {
         alignas(32) float in[8];
-        if(piano->USE_DWGS4 && hammer->isEscaped())
+        // if(piano->USE_DWGS4 && hammer->isEscaped())
+        if(piano->USE_DWGS4 && hammer.isEscaped())
         {
-            *((vec4*)in) = go4();
-            *((vec4*)(in+4)) = go4();
+            vec4 out4 = go4();
+            simde_mm_store_ps(in, out4);
+            out4 = go4();
+            simde_mm_store_ps(in + 4, out4);
         }
         else
         {
@@ -186,20 +191,25 @@ float PianoNote::go()
         float vstringT1 = 0.0;
 
         for(int k=0;k<nstrings;k++) {
-            vstringT0 += stringT[k]->input_velocity();
-            vstringT1 += stringT[k]->next_input_velocity();
+            // vstringT0 += stringT[k]->input_velocity();
+            // vstringT1 += stringT[k]->next_input_velocity();
+            vstringT0 += stringT[k].input_velocity();
+            vstringT1 += stringT[k].next_input_velocity();
         }
         float vin0 = vstringT0 * nstringsi;
         float vin1 = vstringT1 * nstringsi;
-        float hload = hammer->load(vin0,vin1)*Z2i;
+        // float hload = hammer->load(vin0,vin1)*Z2i;
+        float hload = hammer.load(vin0,vin1)*Z2i;
 
         float sbloadT = 0.0;
         float sbloadHT = 0.0;
 
         for(int k=0;k<nstrings;k++) {
-            sbloadT += stringT[k]->go_string();
+            // sbloadT += stringT[k]->go_string();
+            sbloadT += stringT[k].go_string();
 #ifdef HSTRING
-            sbloadHT += stringHT[k]->go_string();
+            // sbloadHT += stringHT[k]->go_string();
+            sbloadHT += stringHT[k].go_string();
 #endif
         }
 
@@ -211,11 +221,14 @@ float PianoNote::go()
         float tranForceH = 0.0f;
         float longTranForce = 0.0f;
         for(int k=0;k<nstrings;k++) {
-            tranForce += stringT[k]->go_soundboard(hload,out[0]);
+            // tranForce += stringT[k]->go_soundboard(hload,out[0]);
+            tranForce += stringT[k].go_soundboard(hload,out[0]);
 #ifdef HSTRING
-            tranForceH += stringHT[k]->go_soundboard(0,out[1]);
+            // tranForceH += stringHT[k]->go_soundboard(0,out[1]);
+            tranForceH += stringHT[k].go_soundboard(0,out[1]);
 #endif
-            longTranForce += stringT[k]->longTran();
+            // longTranForce += stringT[k]->longTran();
+            longTranForce += stringT[k].longTran();
         }
 
         //longTranForce = 0;
@@ -225,7 +238,8 @@ float PianoNote::go()
         tTran = (tTran + 1)%TranBufferSize;
 
         if(tLong >= 0) {
-            longForce = stringT[0]->tran2long(longDelay);
+            // longForce = stringT[0]->tran2long(longDelay);
+            longForce = stringT[0].tran2long(longDelay);
         }
         tLong++;
     }
@@ -252,9 +266,11 @@ vec4 PianoNote::go4()
 
     if(!bInit4) {
         for(int k=0;k<nstrings;k++) {
-            stringT[k]->init_string4();
+            // stringT[k]->init_string4();
+            stringT[k].init_string4();
 #ifdef HSTRING
-            stringHT[k]->init_string4();
+            // stringHT[k]->init_string4();
+            stringHT[k].init_string4();
 #endif
         }
         bInit4 = true;
@@ -265,9 +281,9 @@ vec4 PianoNote::go4()
 
     for(int k=0;k<nstrings;k++)
 	{
-        sbloadT = simde_mm_add_ps (sbloadT, stringT[k]->go_string4());
+        sbloadT = simde_mm_add_ps (sbloadT, stringT[k].go_string4());
 #ifdef HSTRING
-        sbloadHT = simde_mm_add_ps (sbloadHT, stringHT[k]->go_string4());
+        sbloadHT = simde_mm_add_ps (sbloadHT, stringHT[k].go_string4());
 #endif
     }
 
@@ -281,11 +297,11 @@ vec4 PianoNote::go4()
 	
     for(int k=0;k<nstrings;k++)
 	{
-        tranForce = simde_mm_add_ps (tranForce, stringT[k]->go_soundboard4(out[0]));
+        tranForce = simde_mm_add_ps (tranForce, stringT[k].go_soundboard4(out[0]));
 #ifdef HSTRING
-        tranForceH = simde_mm_add_ps (tranForceH, stringHT[k]->go_soundboard4(out[1]));
+        tranForceH = simde_mm_add_ps (tranForceH, stringHT[k].go_soundboard4(out[1]));
 #endif
-        longTranForce = simde_mm_add_ps (longTranForce, stringT[k]->longTran4());
+        longTranForce = simde_mm_add_ps (longTranForce, stringT[k].longTran4());
     }
 
     simde_mm_store_ps (longTranForces + tTran, longTranForce);
@@ -293,7 +309,7 @@ vec4 PianoNote::go4()
     simde_mm_store_ps (tranForcesH + tTran, tranForceH);
     tTran = (tTran + 4)%TranBufferSize;
     
-    vec4 longForce = stringT[0]->tran2long4 (longDelay);
+    vec4 longForce = stringT[0].tran2long4 (longDelay);
     //vec4 longForce = {0};
 
     float longMix = v[pLongitudinalMix];
@@ -303,9 +319,18 @@ vec4 PianoNote::go4()
     vec4 output = simde_mm_add_ps (simde_mm_mul_ps (s1, simde_mm_broadcast_ss(&tranBridgeForce)), simde_mm_mul_ps (s2, simde_mm_broadcast_ss (&longMix)));
 
     vec4 delayed = outputdelay.goDelay4(output);
+    /* the output and delayed finnally stuck at -12.xxx values in default parameters
+     * this cause the energy calculation can not stop a note
+     * this cause bool PianoNote::isDone() always return false
+     * finnally, too many PianoNote instances cause cpu heavry
+    */
     energy = energy + sum4 (simde_mm_sub_ps (simde_mm_mul_ps (output, output), simde_mm_mul_ps (delayed, delayed)));
     if(energy>maxEnergy)
         maxEnergy = energy;
+    // lastOutput_ = currentOutput_;
+    // vec4 sum = simde_mm_hadd_ps(output, output);
+    // vec4 sum2 = simde_mm_hadd_ps(sum, sum);
+    // currentOutput_ = simde_mm_cvtss_f32(sum2);
 
 
     tTranRead = (tTranRead + 4)%TranBufferSize;
@@ -354,22 +379,25 @@ void Piano::init (float Fs_, int blockSize_)
 
     for (int k = PIANO_MIN_NOTE; k <= PIANO_MAX_NOTE; k++)
     {
-        if(noteArray[k]) delete noteArray[k];
-        noteArray[k] = new PianoNote(k, int (Fs), this);
+        // if(noteArray[k]) delete noteArray[k];
+        // noteArray[k] = new PianoNote(k, int (Fs), this);
+        noteArray[k] = std::make_unique<PianoNote>(k, int (Fs), this);
     }
 
-    if (input)
-        delete input;
+    // if (input)
+    //     delete input;
 
-    input = new float[size_t (blockSize)];
+    // input = new float[size_t (blockSize)];
+    input.resize(blockSize);
 
-    if (soundboard)
-        delete soundboard;
+    // if (soundboard)
+    //     delete soundboard;
 
-#ifdef FDN_REVERB
-    soundboard = new Reverb (Fs);
+#if FDN_REVERB
+    // soundboard = new Reverb (Fs);
+    soundboard = std::make_unique<Reverb>(Fs);
 #else
-    soundboard = new ConvolveReverb<revSize>(blockSize);
+    soundboard = std::make_unique<ConvolveReverb<revSize>>(blockSize);
 #endif
 }
 
@@ -378,7 +406,7 @@ Piano::Piano()
     for (int k = PIANO_MIN_NOTE; k <= PIANO_MAX_NOTE; k++)
         noteArray[k] = nullptr;
 
-    input = nullptr;
+    // input = nullptr;
     soundboard = nullptr;
 }
 
@@ -399,12 +427,12 @@ PianoNote::PianoNote (int note_, int Fs_, Piano* piano_)
     //nstrings = 1;
     nstringsi = 1.0f / (float)nstrings;
 
-    for (int k = 0; k < nstrings; k++)
-    {
-        stringT[k] = new dwgs();
-        stringHT[k] = new dwgs();
-    }
-    hammer = new Hammer();
+    // for (int k = 0; k < nstrings; k++)
+    // {
+    //     stringT[k] = new dwgs();
+    //     stringHT[k] = new dwgs();
+    // }
+    // hammer = new Hammer();
 
     outputdelay.setDelay(Fs);
 
@@ -421,7 +449,15 @@ PianoNote::PianoNote (int note_, int Fs_, Piano* piano_)
 bool PianoNote::isDone()
 {
     //return false;
+    float e = maxEnergy * 1e-8f;
+    return energy < e;
     return (energy < 1e-8 * maxEnergy);
+
+    /* too small variation, seen as slience */
+    /* this value will cut the note at almost -60dB */
+    // bool done = std::abs(lastOutput_ - currentOutput_) < 1e-1f;
+    // done |= std::isnan(lastOutput_);
+    // return done;
 }
 
 void PianoNote::triggerOn (float velocity, float* tune)
@@ -519,9 +555,9 @@ void PianoNote::triggerOn (float velocity, float* tune)
     {
         for (int k=0;k<nstrings;k++)
         {
-            stringT[k]->init_string1();
+            stringT[k].init_string1();
 #ifdef HSTRING
-            stringHT[k]->init_string1();
+            stringHT[k].init_string1();
 #endif
         }
     }
@@ -550,7 +586,7 @@ void PianoNote::triggerOn (float velocity, float* tune)
 		else
             fk = f*(1 + (TUNE[nstrings-1][k]-1) * v[pStringDetuning]);
         
-        upsampleMin = max(upsampleMin, stringT[k]->getMinUpsample(downsample, Fs, fk, hp, B));
+        upsampleMin = max(upsampleMin, stringT[k].getMinUpsample(downsample, Fs, fk, hp, B));
     }
     upsample = upsampleMin;
 
@@ -590,18 +626,20 @@ void PianoNote::triggerOn (float velocity, float* tune)
             fk = f*(1 + (TUNE[nstrings-1][k]-1) * v[pStringDetuning]);
         }
 
-        stringT[k]->set(Fs,longmodes,downsample,upsample,fk,v[pStringDecay],v[pStringLopass],B,L,longFreq1,gammaL,gammaL2,hp,Z);
+        stringT[k].set(Fs,longmodes,downsample,upsample,fk,v[pStringDecay],v[pStringLopass],B,L,longFreq1,gammaL,gammaL2,hp,Z);
 #ifdef HSTRING
-        stringHT[k]->set(Fs,longmodes,downsample,upsample,fk,v[pStringDecay],v[pStringLopass],B,L,longFreq1,gammaL,gammaL2,hp,Z);
+        stringHT[k].set(Fs,longmodes,downsample,upsample,fk,v[pStringDecay],v[pStringLopass],B,L,longFreq1,gammaL,gammaL2,hp,Z);
 #endif
 
-        maxDel2 = std::max(stringT[k]->getDel2(), maxDel2);
+        maxDel2 = std::max(stringT[k].getDel2(), maxDel2);
     }
 
-    hammer->set(resample*Fs,m,K,p,Z,alpha,maxDel2+128);
-    hammer->strike(velocity);
+    hammer.set(resample*Fs,m,K,p,Z,alpha,maxDel2+128);
+    hammer.strike(velocity);
     maxEnergy = 0.0;
     energy = 0.0;
+    // lastOutput_ = 0.0f;
+    // currentOutput_ = 0.0f;
 
 
     tranBridgeForce = Z;
@@ -643,8 +681,8 @@ void PianoNote::triggerOff()
 	
     for (int k = 0; k < nstrings; k++)
 	{
-        stringT[k]->damper (v[pDampedStringDecay],v[pDampedStringLopass],gammaLDamped,gammaL2Damped,128);
-        stringHT[k]->damper (v[pDampedStringDecay],v[pDampedStringLopass],gammaLDamped,gammaL2Damped,128);
+        stringT[k].damper (v[pDampedStringDecay],v[pDampedStringLopass],gammaLDamped,gammaL2Damped,128);
+        stringHT[k].damper (v[pDampedStringDecay],v[pDampedStringLopass],gammaLDamped,gammaL2Damped,128);
     }
 }
 
@@ -660,21 +698,21 @@ bool PianoNote::isActive()
 
 PianoNote::~PianoNote()
 {
-    for (int k=0;k<nstrings;k++)
-    {
-        delete stringT[k];
-        delete stringHT[k];
-    }
-    delete hammer;
+    // for (int k=0;k<nstrings;k++)
+    // {
+    //     delete stringT[k];
+    //     delete stringHT[k];
+    // }
+    // delete hammer;
 }
 
 Piano::~Piano()
 {
-    for (int k = PIANO_MIN_NOTE; k <= PIANO_MAX_NOTE; k++)
-        delete noteArray[k];
+    // for (int k = PIANO_MIN_NOTE; k <= PIANO_MAX_NOTE; k++)
+    //     delete noteArray[k];
 
-    delete input;
-    delete soundboard;
+    // delete input;
+    // delete soundboard;
 }
 
 void Piano::process (float* out, int samples)
@@ -689,7 +727,7 @@ void Piano::process (float* out, int samples)
                 output += v->goUp();
 
         } while (v && (v=v->next) && (v != voiceList));
-#ifdef FDN_REVERB
+#if FDN_REVERB
         out[i] = vals[pVolume] * soundboard->reverb(output);
 #else
         out[i] =  vals[pVolume] * output;
@@ -698,8 +736,8 @@ void Piano::process (float* out, int samples)
     }
 
 
-#ifndef FDN_REVERB
-    soundboard->fft_conv(input, out, samples);
+#if !FDN_REVERB
+    soundboard->fft_conv(input.data(), out, samples);
 #endif
 }
 
@@ -743,7 +781,7 @@ void Piano::process (float** outS, int sampleFrames, juce::MidiBuffer& midi)
 
         if (m.getNoteNumber() >= PIANO_MIN_NOTE && m.getNoteNumber() <= PIANO_MAX_NOTE)
         {
-            PianoNote* v = noteArray[m.getNoteNumber()];
+            PianoNote* v = noteArray[m.getNoteNumber()].get();
             if (m.isNoteOn())
             {
                 if (! (noteArray[m.getNoteNumber()]->isActive()))
@@ -767,7 +805,7 @@ void Piano::process (float** outS, int sampleFrames, juce::MidiBuffer& midi)
 
 void Piano::triggerOn (int note, float velocity, float* tune)
 {
-    PianoNote* v = noteArray[note];
+    PianoNote* v = noteArray[note].get();
     addVoice (v);
     v->triggerOn (velocity,tune);
 }
@@ -823,7 +861,7 @@ void Piano::setParameter (int32_t index, float value)
             if (p.v != value)
             {
                 p.v = value;
-#ifdef FDN_REVERB
+#if FDN_REVERB
                 soundboard->set (vals[pSoundboardSize], vals[pSoundboardDecay], vals[pSoundboardLopass]);
 #endif
             }
@@ -846,7 +884,7 @@ void Piano::setParameter (int32_t index, float value)
             if (std::abs (n - p.v) > 0.0001f)
             {
                 p.v = n;
-#ifdef FDN_REVERB
+#if FDN_REVERB
                 soundboard->set (vals[pSoundboardSize], vals[pSoundboardDecay], vals[pSoundboardLopass]);
 #endif
             }
@@ -858,7 +896,7 @@ void Piano::setParameter (int32_t index, float value)
             if (std::abs (n - p.v) > 0.0001f)
             {
                 p.v = n;
-#ifdef FDN_REVERB
+#if FDN_REVERB
                 soundboard->set (vals[pSoundboardSize], vals[pSoundboardDecay], vals[pSoundboardLopass]);
 #endif
             }

@@ -2,6 +2,7 @@
 #define DWGS_H
 
 #include "filter.h"
+#include "AlignedArray.hpp"
 
 class dwgs;
 
@@ -38,10 +39,14 @@ public:
     
     int downsample;
     int delTab;
-    float *wave;
-    float *wave0;
-    float *wave1;
-    float *Fl;
+    // float *wave;
+    // float *wave0;
+    // float *wave1;
+    // float *Fl;
+    AlignedArray<float, 32> wave;
+    AlignedArray<float, 32> wave0;
+    AlignedArray<float, 32> wave1;
+    AlignedArray<float, 32> Fl;
     
     float F[nMaxLongModes];
     vec4 F4[nMaxLongModes];
@@ -67,8 +72,9 @@ public:
     Thiran hammerDelay;
     ThiranDispersion dispersion[4];
     
-    float *modeTable[nMaxLongModes];
-    float *modeTable4[nMaxLongModes];
+    // float *modeTable[nMaxLongModes];
+    // float *modeTable4[nMaxLongModes];
+    AlignedArray<float, 32> modeTable[nMaxLongModes];
     float fLong[nMaxLongModes];
     DWGResonator longModeResonator[nMaxLongModes];
     

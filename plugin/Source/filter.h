@@ -5,6 +5,7 @@
 #include <string.h>
 #include <iostream>
 #include <math.h>
+#include "AlignedArray.hpp"
 
 enum {
     MaxFilterUpsample = 8
@@ -22,10 +23,14 @@ public:
     float phasedelay(float omega);
     void init(int upsample = 1);
 
-    float *x;
-    float *y;
-    float *b;
-    float *a;
+    // float *x;
+    // float *y;
+    // float *b;
+    // float *a;
+    AlignedArray<float, 32> x;
+    AlignedArray<float, 32> y;
+    AlignedArray<float, 32> b;
+    AlignedArray<float, 32> a;
 
     float *bend;
     float *aend;
