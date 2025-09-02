@@ -301,7 +301,7 @@ void dwgs::set(float Fs, int longmodes, int downsample, int upsample, float f, f
 #endif
         if(delTab) {
             float n = float (PI) * k / delHalf;
-            if(modeTable[k]) delete modeTable[k];
+			if (modeTable[k]) free_memalign(modeTable[k]);
             posix_memalign ((void**)&modeTable[k], 32, size_t (delTab + 8) * sizeof (float));
 
             for (int i = 0; i <= delTab; i++)

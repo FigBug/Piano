@@ -18,6 +18,9 @@
 
 #ifdef _WIN32
 #define posix_memalign(p, a, s) (((*(p)) = _aligned_malloc((s), (a))), *(p) ? 0 :errno)
+#define free_memalign(x) _aligned_free(x)
+#else
+#define free_memalign(x) free(x)
 #endif
 
 #define HALFPI 1.5707963267948966192313216916398
