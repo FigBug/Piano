@@ -186,7 +186,8 @@ void PianoAudioProcessor::prepareToPlay (double newSampleRate, int newSamplesPer
 {
     Processor::prepareToPlay (newSampleRate, newSamplesPerBlock);
 
-    piano.init (float (newSampleRate), newSamplesPerBlock);
+	piano = std::make_unique<Piano>();
+    piano->init (float (newSampleRate), interalBlockSize);
 	
 	fifoIn.setSize (2, newSamplesPerBlock * 2 + interalBlockSize);
 	fifoOut.setSize (2, newSamplesPerBlock * 2 + interalBlockSize);
@@ -208,26 +209,29 @@ void PianoAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::
 
 	keyState.processNextMidiBuffer (midi, 0, numSamples, true);
 
-    int idx = 0;
-    for (auto p : params)
-        piano.setParameter (idx++, p->getValue());
-	
-	fifoIn.write (buffer, midi);
-	
-	while (fifoIn.getNumSamplesAvailable() >= interalBlockSize)
+	if (piano)
 	{
-		juce::MidiBuffer workMidi;
-		fifoIn.read (workBuffer, workMidi);
-
-		auto ptr = (float**)workBuffer.getArrayOfWritePointers();
-		piano.process (ptr, workBuffer.getNumSamples(), workMidi);
+		int idx = 0;
+		for (auto p : params)
+			piano->setParameter (idx++, p->getValue());
 		
-		fifoOut.write (workBuffer, workMidi);
+		fifoIn.write (buffer, midi);
+		
+		while (fifoIn.getNumSamplesAvailable() >= interalBlockSize)
+		{
+			juce::MidiBuffer workMidi;
+			fifoIn.read (workBuffer, workMidi);
+			
+			auto ptr = (float**)workBuffer.getArrayOfWritePointers();
+			piano->process (ptr, workBuffer.getNumSamples(), workMidi);
+			
+			fifoOut.write (workBuffer, workMidi);
+		}
+		
+		// write the output
+		midi.clear();
+		fifoOut.read (buffer, midi);
 	}
-	
-	// write the output
-	midi.clear();
-	fifoOut.read (buffer, midi);
 }
 
 //==============================================================================
