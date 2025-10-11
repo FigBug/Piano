@@ -346,38 +346,57 @@ void Piano::init (float Fs_, int blockSize_)
     soundboard = std::make_unique<ConvolveReverb<revSize>>(blockSize);
 #endif
 
-    for (int i = 0; auto& t : threadDatas_)
+    for (size_t i = 0; i < kNumThreads; ++i)
     {
-        t->quit = true;
-        t->waiter.release();
-        if (t->thread)
+        auto& t = threadDatas_[i];
+
+        if (t.thread)
         {
-            t->thread->join();
+            t.thread->signalThreadShouldExit();
         }
-        t->quit = false;
-        t->buffer.resize(blockSize);
-        t->size = 0;
-        t->complete = false;
-        t->thread = std::make_unique<std::jthread>(
-            [this, &data = threadDatas_[i++]] {
-                while (!data->quit)
+        t.size = 0;
+        t.waiter.release();
+        if (t.thread)
+        {
+            t.thread->waitForThreadToExit(1000);
+        }
+        t.buffer.resize(blockSize);
+        t.complete = false;
+
+        class RenderingThread : public juce::Thread {
+        public:
+            RenderingThread(ThreadData& d, Piano& piano)
+                : juce::Thread("piano render")
+                , ownedData(d)
+                , parentPiano(piano) {}
+
+            void run() override {
+                while (!threadShouldExit())
                 {
-                    data->waiter.acquire();
-                    std::fill_n(data->buffer.begin(), data->size, 0.0f);
-                    int idx = threadVoiceIndex_.fetch_sub(1);
+                    ownedData.waiter.acquire();
+                    std::fill_n(ownedData.buffer.begin(), ownedData.size, 0.0f);
+                    int idx = parentPiano.threadVoiceIndex_.fetch_sub(1);
                     while (idx > 0)
                     {
-                        PianoNote* note = voiceList[idx - 1];
-                        for (size_t i = 0; i < data->size; ++i)
+                        PianoNote* note = parentPiano.voiceList[idx - 1];
+                        for (size_t i = 0; i < ownedData.size; ++i)
                         {
-                            data->buffer[i] += note->goUp();
+                            ownedData.buffer[i] += note->goUp();
                         }
-                        idx = threadVoiceIndex_.fetch_sub(1);
+                        idx = parentPiano.threadVoiceIndex_.fetch_sub(1);
                     }
-                    data->complete = true;
+                    ownedData.complete = true;
                 }
+
+                DBG("render thread exit!");
             }
-        );
+        private:
+            ThreadData& ownedData;
+            Piano& parentPiano;
+        };
+
+        t.thread = std::make_unique<RenderingThread>(threadDatas_[i], *this);
+        t.thread->startRealtimeThread(juce::Thread::RealtimeOptions{});
     }
 }
 
@@ -388,11 +407,6 @@ Piano::Piano()
 
     // input = nullptr;
     soundboard = nullptr;
-
-    for (auto& t : threadDatas_)
-    {
-        t = std::make_unique<ThreadData>();
-    }
 }
 
 PianoNote::PianoNote (int note_, int Fs_, Piano* piano_)
@@ -679,9 +693,9 @@ Piano::~Piano()
 {
     for (auto& t : threadDatas_)
     {
-        t->quit = true;
-        t->waiter.release();
-        t->thread->join();
+        t.thread->signalThreadShouldExit();
+        t.waiter.release();
+        t.thread->waitForThreadToExit(1000);
     }
 }
 
@@ -692,9 +706,9 @@ void Piano::process (std::span<float> block)
     threadVoiceIndex_ = numActiveVoices;
     for (auto& t : threadDatas_)
     {
-        t->size = block.size();
-        t->complete = false;
-        t->waiter.release();
+        t.size = block.size();
+        t.complete = false;
+        t.waiter.release();
     }
     int idx = threadVoiceIndex_.fetch_sub(1);
     while (idx > 0)
@@ -708,10 +722,10 @@ void Piano::process (std::span<float> block)
     }
     for (auto& t : threadDatas_)
     {
-        while (!t->complete) {}
+        while (!t.complete) {}
         for (size_t i = 0; i < block.size(); ++i)
         {
-            block[i] += t->buffer[i];
+            block[i] += t.buffer[i];
         }
     }
 

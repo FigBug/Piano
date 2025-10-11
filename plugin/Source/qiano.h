@@ -194,17 +194,16 @@ protected:
     std::vector<float> input;
     // multithread
     std::atomic<int> threadVoiceIndex_;
-    static constexpr int kNumThreads = 3;
+    static constexpr int kNumThreads = 1;
     struct ThreadData {
         ThreadData() : waiter(0) {}
         std::vector<float> buffer;
         std::binary_semaphore waiter;
-        std::atomic<bool> quit{ false };
         std::atomic<bool> complete{ false };
-        std::unique_ptr<std::jthread> thread;
+        std::unique_ptr<juce::Thread> thread;
         int size{};
     };
-    std::array<std::unique_ptr<ThreadData>, kNumThreads> threadDatas_;
+    std::array<ThreadData, kNumThreads> threadDatas_;
 
 #if FDN_REVERB
     std::unique_ptr<Reverb> soundboard;
