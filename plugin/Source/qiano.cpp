@@ -346,58 +346,21 @@ void Piano::init (float Fs_, int blockSize_)
     soundboard = std::make_unique<ConvolveReverb<revSize>>(blockSize);
 #endif
 
-    for (size_t i = 0; i < kNumThreads; ++i)
+    if (auxThread)
     {
-        auto& t = threadDatas_[i];
-
-        if (t.thread)
-        {
-            t.thread->signalThreadShouldExit();
-        }
-        t.size = 0;
-        t.waiter.release();
-        if (t.thread)
-        {
-            t.thread->waitForThreadToExit(1000);
-        }
-        t.buffer.resize(blockSize);
-        t.complete = false;
-
-        class RenderingThread : public juce::Thread {
-        public:
-            RenderingThread(ThreadData& d, Piano& piano)
-                : juce::Thread("piano render")
-                , ownedData(d)
-                , parentPiano(piano) {}
-
-            void run() override {
-                while (!threadShouldExit())
-                {
-                    ownedData.waiter.acquire();
-                    std::fill_n(ownedData.buffer.begin(), ownedData.size, 0.0f);
-                    int idx = parentPiano.threadVoiceIndex_.fetch_sub(1);
-                    while (idx > 0)
-                    {
-                        PianoNote* note = parentPiano.voiceList[idx - 1];
-                        for (size_t i = 0; i < ownedData.size; ++i)
-                        {
-                            ownedData.buffer[i] += note->goUp();
-                        }
-                        idx = parentPiano.threadVoiceIndex_.fetch_sub(1);
-                    }
-                    ownedData.complete = true;
-                }
-
-                DBG("render thread exit!");
-            }
-        private:
-            ThreadData& ownedData;
-            Piano& parentPiano;
-        };
-
-        t.thread = std::make_unique<RenderingThread>(threadDatas_[i], *this);
-        t.thread->startRealtimeThread(juce::Thread::RealtimeOptions{});
+        auxThread->signalThreadShouldExit();
     }
+    auxThreadData.size = 0;
+    auxThreadData.waiter.release();
+    if (auxThread)
+    {
+        auxThread->waitForThreadToExit(1000);
+    }
+    auxThreadData.buffer.resize(blockSize);
+    auxThreadData.complete = false;
+
+    auxThread = std::make_unique<RenderingThread>(*this);
+    auxThread->startRealtimeThread(juce::Thread::RealtimeOptions{});
 }
 
 Piano::Piano()
@@ -691,25 +654,22 @@ PianoNote::~PianoNote()
 
 Piano::~Piano()
 {
-    for (auto& t : threadDatas_)
-    {
-        t.thread->signalThreadShouldExit();
-        t.waiter.release();
-        t.thread->waitForThreadToExit(1000);
-    }
+    auxThread->signalThreadShouldExit();
+    auxThreadData.waiter.release();
+    auxThread->waitForThreadToExit(1000);
 }
 
 
-void Piano::process (std::span<float> block)
+template<>
+void Piano::process<true> (std::span<float> block)
 {
     // the block is always zero because juce::AudioBuffer::clear called outside
     threadVoiceIndex_ = numActiveVoices;
-    for (auto& t : threadDatas_)
-    {
-        t.size = block.size();
-        t.complete = false;
-        t.waiter.release();
-    }
+
+    auxThreadData.size = block.size();
+    auxThreadData.complete = false;
+    auxThreadData.waiter.release();
+
     int idx = threadVoiceIndex_.fetch_sub(1);
     while (idx > 0)
     {
@@ -720,12 +680,37 @@ void Piano::process (std::span<float> block)
         }
         idx = threadVoiceIndex_.fetch_sub(1);
     }
-    for (auto& t : threadDatas_)
+
+    while (!auxThreadData.complete) {}
+    for (size_t i = 0; i < block.size(); ++i)
     {
-        while (!t.complete) {}
+        block[i] += auxThreadData.buffer[i];
+    }
+
+    for (size_t i = 0; i < block.size(); ++i)
+    {
+#ifdef FDN_REVERB
+        block[i] = vals[pVolume] * soundboard->reverb(block[i]);
+#else
+        block[i] *= vals[pVolume];
+#endif
+    }
+
+#if !FDN_REVERB
+    soundboard->fft_conv(block.data(), out, block.size());
+#endif
+}
+
+template<>
+void Piano::process<false> (std::span<float> block)
+{
+    // the block is always zero because juce::AudioBuffer::clear called outside
+    for (size_t i = 0; i < numActiveVoices; ++i)
+    {
+        PianoNote* note = voiceList[i];
         for (size_t i = 0; i < block.size(); ++i)
         {
-            block[i] += t.buffer[i];
+            block[i] += note->goUp();
         }
     }
 
@@ -781,7 +766,12 @@ void Piano::process (std::span<float> block, juce::MidiBuffer& midi)
 
         size_t nextDelta = static_cast<size_t>(m.getTimeStamp());
         nextDelta = std::min (nextDelta, block.size());
-        process (block.subspan(delta, nextDelta - delta));
+        if (wasMultiThread) {
+            process<true> (block.subspan(delta, nextDelta - delta));
+        }
+        else {
+            process<false> (block.subspan(delta, nextDelta - delta));
+        }
 
         if (m.getNoteNumber() >= PIANO_MIN_NOTE && m.getNoteNumber() <= PIANO_MAX_NOTE)
         {
@@ -805,7 +795,12 @@ void Piano::process (std::span<float> block, juce::MidiBuffer& midi)
         delta = nextDelta;
     }
 
-    process(block.subspan(delta));
+    if (wasMultiThread) {
+        process<true> (block.subspan(delta));
+    }
+    else {
+        process<false> (block.subspan(delta));
+    }
 }
 
 void Piano::triggerOn (int note, float velocity, float* tune)
@@ -952,6 +947,26 @@ void Piano::setParameter (int32_t index, float value)
         case pMaxTime:
             // seconds
             p.v = std::lerp(3.0f, 10.0f, value);
+            break;
+        case pMultiThread:
+        {
+            bool multiThread = value > 0.5f;
+            if (wasMultiThread != multiThread) {
+                if (wasMultiThread) {
+                    auxThreadData.size = 0;
+                    if (auxThread) {
+                        auxThread->signalThreadShouldExit();
+                    }
+                    auxThreadData.waiter.release();
+                    auxThread->waitForThreadToExit(1000);
+                }
+                else {
+                    auxThread = std::make_unique<RenderingThread>(*this);
+                    auxThread->startRealtimeThread(juce::Thread::RealtimeOptions{});
+                }
+                wasMultiThread = multiThread;
+            }
+        }
             break;
     }
 }

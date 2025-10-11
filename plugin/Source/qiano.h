@@ -80,6 +80,7 @@ enum parameters {
     pDownsample,
     pLongModes,
     pMaxTime,
+    pMultiThread,
     NumParams
 };
 
@@ -172,6 +173,7 @@ public:
     Piano();
     ~Piano();
 
+    template<bool WithAuxThread>
     void process (std::span<float> block);
     void process (std::span<float> block, juce::MidiBuffer&);
     void init (float Fs, int blockSize);
@@ -193,17 +195,46 @@ protected:
     float Fs;
     std::vector<float> input;
     // multithread
+    bool wasMultiThread = true;
     std::atomic<int> threadVoiceIndex_;
-    static constexpr int kNumThreads = 1;
+    
     struct ThreadData {
         ThreadData() : waiter(0) {}
         std::vector<float> buffer;
         std::binary_semaphore waiter;
         std::atomic<bool> complete{ false };
-        std::unique_ptr<juce::Thread> thread;
         int size{};
     };
-    std::array<ThreadData, kNumThreads> threadDatas_;
+    std::unique_ptr<juce::Thread> auxThread;
+    ThreadData auxThreadData;
+
+    class RenderingThread : public juce::Thread {
+    public:
+        RenderingThread(Piano& piano)
+            : juce::Thread("piano render")
+            , parentPiano(piano) {}
+
+        void run() override {
+            while (!threadShouldExit())
+            {
+                parentPiano.auxThreadData.waiter.acquire();
+                std::fill_n(parentPiano.auxThreadData.buffer.begin(), parentPiano.auxThreadData.size, 0.0f);
+                int idx = parentPiano.threadVoiceIndex_.fetch_sub(1);
+                while (idx > 0)
+                {
+                    PianoNote* note = parentPiano.voiceList[idx - 1];
+                    for (size_t i = 0; i < parentPiano.auxThreadData.size; ++i)
+                    {
+                        parentPiano.auxThreadData.buffer[i] += note->goUp();
+                    }
+                    idx = parentPiano.threadVoiceIndex_.fetch_sub(1);
+                }
+                parentPiano.auxThreadData.complete = true;
+            }
+        }
+    private:
+        Piano& parentPiano;
+    };
 
 #if FDN_REVERB
     std::unique_ptr<Reverb> soundboard;

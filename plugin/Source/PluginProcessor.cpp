@@ -160,6 +160,7 @@ PianoAudioProcessor::PianoAudioProcessor()
     params.add (addExtParam ("Downsample", "Downsample", "", "" , { 0.0f, 1.0f }, 0.0f, {0.0f}, textFunction));
     params.add (addExtParam ("LongModes", "Long Modes", "", "", { 0.0f, 1.0f }, 0.0f, {0.0f}, textFunction));
     params.add (addExtParam ("MaxTime", "Max Time", "", "", { 0.0f, 1.0f }, 0.0f, {0.0f}, textFunction));
+    params.add (addExtParam ("MultiThread", "MultiThread", "", "", { 0.0f, 1.0f }, 0.0f, {0.0f}, textFunction));
 
     init();
 }
