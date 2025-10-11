@@ -226,8 +226,12 @@ void PianoAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::
 			juce::MidiBuffer workMidi;
 			fifoIn.read (workBuffer, workMidi);
 			
-			auto ptr = (float**)workBuffer.getArrayOfWritePointers();
-			piano->process (ptr, workBuffer.getNumSamples(), workMidi);
+			std::span<float> leftBlock{ workBuffer.getWritePointer(0), static_cast<size_t>(workBuffer.getNumSamples()) };
+			std::span<float> rightBlock{ workBuffer.getWritePointer(1), static_cast<size_t>(workBuffer.getNumSamples()) };
+
+			piano->process (leftBlock, midi);
+
+			std::copy (leftBlock.begin(), leftBlock.end(), rightBlock.begin());
 			
 			fifoOut.write (workBuffer, workMidi);
 		}
