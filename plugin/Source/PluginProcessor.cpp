@@ -1,5 +1,7 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
+#include <cstddef>
+#include <span>
 
 static float userValue (int32_t index, float value)
 {
@@ -148,7 +150,7 @@ PianoAudioProcessor::PianoAudioProcessor()
     params.add (addExtParam ("LongitudinalGamma", "Longitudinal Gamma", "", "" , { 0.0f, 1.0f }, 0.5f, {0.0f}, textFunction));
     params.add (addExtParam ("LongitudinalGammaQuadratic", "Longitudinal Gamma Quadratic", "", "" , { 0.0f, 1.0f }, 0.0f, {0.0f}, textFunction));
     params.add (addExtParam ("LongitudinalGammaDamped", "Longitudinal Gamma Damped", "", "" , { 0.0f, 1.0f }, 0.5f, {0.0f}, textFunction));
-    params.add (addExtParam ("LongitudinalGammaQuadraticDamped", "Longitudinal Gamma Quadratic Damped", "", "" , { 0.0f, 1.0f }, 0.0f, {0.0f}, textFunction));
+    params.add (addExtParam ("LongitudinalGammaQuadDamped", "Longitudinal Gamma Quad Damped", "", "" , { 0.0f, 1.0f }, 0.0f, {0.0f}, textFunction));
     params.add (addExtParam ("LongitudinalMix", "Longitudinal Mix", "", "" , { 0.0f, 1.0f }, 0.5f, {0.0f}, textFunction));
     params.add (addExtParam ("LongitudinalTransverseMix", "Longitudinal Transverse Mix", "", "" , { 0.0f, 1.0f }, 0.5f, {0.0f}, textFunction));
     params.add (addExtParam ("Volume", "Volume", "", "" , { 0.0f, 1.0f }, 0.5f, {0.0f}, textFunction));
@@ -159,6 +161,8 @@ PianoAudioProcessor::PianoAudioProcessor()
     params.add (addExtParam ("Dwgs4", "Dwgs4", "", "" , { 0.0f, 1.0f }, 1.0f, {0.0f}, textFunction));
     params.add (addExtParam ("Downsample", "Downsample", "", "" , { 0.0f, 1.0f }, 0.0f, {0.0f}, textFunction));
     params.add (addExtParam ("LongModes", "Long Modes", "", "", { 0.0f, 1.0f }, 0.0f, {0.0f}, textFunction));
+    params.add (addExtParam ("MaxTime", "Max Time", "", "", { 0.0f, 1.0f }, 0.0f, {0.0f}, textFunction));
+    params.add (addExtParam ("MultiThread", "MultiThread", "", "", { 0.0f, 1.0f }, 0.0f, {0.0f}, textFunction));
 
     init();
 }

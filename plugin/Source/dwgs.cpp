@@ -47,7 +47,7 @@ vec4 dwgs::tran2long4 (int delay)
     /* wave10[-del0] = x[cursor - del1] */
     n = delTab + 4;
     cur = (d1.cursor + DelaySize - delay + del0 - del1 + 1 ) % DelaySize;
-    wave10 = wave0 + delTab + 4;
+    wave10 = wave0.Get() + delTab + 4;
 
     if(n <= cur)
     {
@@ -86,7 +86,7 @@ vec4 dwgs::tran2long4 (int delay)
         x = d2.x;
         cur = (d2.cursor + DelaySize - delay - 4 + j + del4) % DelaySize;
 
-        float* wave10 = wave0 + j;
+        float* wave10 = wave0.Get() + j;
 #ifdef STRING_DEBUG
         for(int i=0; i<=delTab; i++)
             printf("%g ",wave10[i]);
@@ -98,7 +98,7 @@ vec4 dwgs::tran2long4 (int delay)
         if (n <= cur)
         {
             float *x1 = x + cur;
-            ms4 (wave10, x1 - n + 1, wave, n);
+            ms4 (wave10, x1 - n + 1, wave.Get(), n);
 
             /*
              for(int i=0; i<n; i++) {
@@ -109,7 +109,7 @@ vec4 dwgs::tran2long4 (int delay)
         else
         {
             float *x1 = x + cur;
-            ms4(wave10,x1-cur,wave,cur+1);
+            ms4(wave10,x1-cur,wave.Get(),cur+1);
             /*
              for(int i=0; i<=cur; i++) {
              wave1[i] = x1[-i];
@@ -128,7 +128,7 @@ vec4 dwgs::tran2long4 (int delay)
             }
 
             if(cur + 1 < n) {
-                ms4(wave10+cur+1,x1-n+1,wave+cur+1,n-cur-1);
+                ms4(wave10+cur+1,x1-n+1,wave.Get()+cur+1,n-cur-1);
                 /*
                  for(int i=cur+1; i<n; i++) {
                  wave1[i] = x1[-i];
@@ -144,7 +144,7 @@ vec4 dwgs::tran2long4 (int delay)
         printf("\n");
 #endif
 
-        diff4(wave, Fl, delTab+1);
+        diff4(wave.Get(), Fl.Get(), delTab+1);
 
 #ifdef LONG_DEBUG
         for(int i=0; i<=delTab; i++) {
@@ -155,8 +155,8 @@ vec4 dwgs::tran2long4 (int delay)
 
         out[j] = 0;
         for(int k=1; k<=nLongModes; k++) {
-            float *tab = modeTable[k];
-            float F = sse_dot (delTab + 4, tab, Fl);
+            float *tab = modeTable[k].Get();
+            float F = sse_dot (delTab + 4, tab, Fl.Get());
             float Fbl = longModeResonator[k].go (F);
             out[j] += Fbl;
         }
@@ -271,13 +271,17 @@ void dwgs::set(float Fs, int longmodes, int downsample, int upsample, float f, f
 
     //logf("%d %d %d %d %g %g\n", del0, del1, del2, del3, delta, delta2);
 
-    posix_memalign ((void**)&wave0, 32, size_t (delTab + 32) * sizeof(float));
-    posix_memalign ((void**)&wave1, 32, size_t (delTab + 32) * sizeof(float));
-    posix_memalign ((void**)&wave, 32, size_t (delTab + 32) * sizeof(float));
-    posix_memalign ((void**)&Fl, 32, size_t (delTab + 32) * sizeof(float));
-    memset (wave0, 0, size_t (delTab + 32) * sizeof(float));
-    memset (wave1, 0, size_t(delTab + 32) * sizeof(float));
-    memset (Fl, 0, size_t (delTab + 32) * sizeof(float));
+    // posix_memalign ((void**)&wave0, 32, size_t (delTab + 8) * sizeof(float));
+    // posix_memalign ((void**)&wave1, 32, size_t (delTab + 8) * sizeof(float));
+    // posix_memalign ((void**)&wave, 32, size_t (delTab + 8) * sizeof(float));
+    // posix_memalign ((void**)&Fl, 32, size_t (delTab + 8) * sizeof(float));
+    // memset (wave0, 0, size_t (delTab + 8) * sizeof(float));
+    // memset (wave1, 0, size_t(delTab + 8) * sizeof(float));
+    // memset (Fl, 0, size_t (delTab + 8) * sizeof(float));
+    wave0.Reset(delTab + 8);
+    wave1.Reset(delTab + 8);
+    wave.Reset(delTab + 8);
+    Fl.Reset(delTab + 8);
 
     //logf("dwgs top %d %d %d %d %g %g %g %g %g %g %g %g\n",del0,del1,del2,del3,dHammer+1+del2+dTop,del1+del3+dDispersion+lowpassdelay+dBottom, dTop, dBottom, dHammer, inpos*deltot, lowpassdelay, dDispersion);
 
@@ -301,8 +305,10 @@ void dwgs::set(float Fs, int longmodes, int downsample, int upsample, float f, f
 #endif
         if(delTab) {
             float n = float (PI) * k / delHalf;
-			if (modeTable[k]) free_memalign(modeTable[k]);
-            posix_memalign ((void**)&modeTable[k], 32, size_t (delTab + 8) * sizeof (float));
+            // if(modeTable[k]) delete modeTable[k];
+            // if (modeTable[k]) _aligned_free(modeTable[k]);
+            // posix_memalign ((void**)&modeTable[k], 32, size_t (delTab + 8) * sizeof (float));
+            modeTable[k].Reset(delTab + 8);
 
             for (int i = 0; i <= delTab; i++)
             {
@@ -629,7 +635,7 @@ float dwgs::tran2long(int delay)
 
     x = d0.x;
     cur = (d0.cursor + DelaySize - delay) % DelaySize;
-    float *wave10 = wave + del2 + del4;
+    float *wave10 = wave.Get() + del2 + del4;
 
     if(del0 <= cur) {
         float *x1 = x + cur;
@@ -662,7 +668,7 @@ float dwgs::tran2long(int delay)
     /* wave10[-del0] = x[cursor - del1] */
 
     cur = (d1.cursor + DelaySize - delay + del0 - del1) % DelaySize;
-    wave10 = wave + delTab;
+    wave10 = wave.Get() + delTab;
     if(del0 < cur) {
         float *x1 = x + cur;
         for(int i=0; i>=-del0; i--) {
@@ -683,7 +689,7 @@ float dwgs::tran2long(int delay)
     x = d3.x;
     cur = (d3.cursor + DelaySize - delay) % DelaySize;
     n = del2 + del4;
-    wave10 = wave + n;
+    wave10 = wave.Get() + n;
     if(n < cur) {
         float *x1 = x + cur;
         for(int i=-1; i>=-n; i--) {
@@ -727,8 +733,8 @@ float dwgs::tran2long(int delay)
 
     float Fbl = 0;
     for(int k=1; k<=nLongModes; k++) {
-        float *tab = modeTable[k];
-        float F = sse_dot (delTab + 4, tab, Fl);
+        float *tab = modeTable[k].Get();
+        float F = sse_dot (delTab + 4, tab, Fl.Get());
 #ifdef LONGMODE_DEBUG
         cout << F << " ";
 #endif

@@ -61,22 +61,21 @@ public:
 protected:
     int getLength(int k);
     static int allLengths[NumLengths];
-    int lengths[ReverbTaps];
-    float Fs;
+    int lengths[ReverbTaps]{};
+    float Fs{};
     Delay<1024> d[ReverbTaps];
-    float o[ReverbTaps];
-    float b[ReverbTaps];
-    float c[ReverbTaps];
+    float o[ReverbTaps]{};
+    float b[ReverbTaps]{};
+    float c[ReverbTaps]{};
     
     vec4 o4[ReverbTaps];
     vec4 b4[ReverbTaps];
     vec4 c4[ReverbTaps];
     
-    float scale;
+    float scale{};
     
     Loss decay[ReverbTaps];
-    ConvolveReverb<revSize> *conv;
-    float out;
+    float out{};
 };
 
 #endif

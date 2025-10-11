@@ -3,6 +3,9 @@
 #define PIANO_H
 
 #include <JuceHeader.h>
+#include <cstddef>
+#include <semaphore>
+#include <span>
 
 #define PIANO_MIN_NOTE 21
 #define PIANO_MAX_NOTE 108
@@ -21,7 +24,6 @@ enum {
     MaxDecimation = 16,
     MaxLongDelay = 16,
     TranBufferSize = 32,
-    NumParams = 34
 };
 
 class Param
@@ -38,8 +40,8 @@ public:
     operator float() const {
         return v;
     }
-    float f;
-    float v;
+    float f{};
+    float v{};
 };
 
 enum parameters {
@@ -76,7 +78,10 @@ enum parameters {
     pBridgeSpring,
     pDwgs4,
     pDownsample,
-    pLongModes
+    pLongModes,
+    pMaxTime,
+    pMultiThread,
+    NumParams
 };
 
 int getParameterIndex(const char *key);
@@ -99,9 +104,9 @@ public:
     bool isActive();
     void deActivate();
 
-    PianoNote* next = nullptr;
-    PianoNote* prev = nullptr;
     int note;
+    int activeSampleAfterOff{};
+    bool triggerOn_{};
     Piano* piano = nullptr;
 
     bool isDone();
@@ -140,9 +145,9 @@ protected:
     float f;
     int nstrings;
 
-    dwgs* stringT[3];
-    dwgs* stringHT[3];
-    Hammer* hammer;
+    dwgs stringT[3];
+    dwgs stringHT[3];
+    Hammer hammer;
 
     alignas(32) float outUp[8];
     alignas(32) float outDown[8];
@@ -168,11 +173,9 @@ public:
     Piano();
     ~Piano();
 
-    void addVoice (PianoNote *v);
-    void removeVoice (PianoNote *v);
-    void process (float *out, int samples);
-    void process (float **out, int frameSamples, int offset);
-    void process (float **out, int frameSamples, juce::MidiBuffer&);
+    template<bool WithAuxThread>
+    void process (std::span<float> block);
+    void process (std::span<float> block, juce::MidiBuffer&);
     void init (float Fs, int blockSize);
     void triggerOn (int note, float velocity, float *tune);
 
@@ -182,19 +185,61 @@ public:
 
     int USE_DWGS4 = 1;
 
-protected:     
+protected:
     friend class PianoNote;
-    Value vals[NumParams];
-    PianoNote* voiceList;
-    PianoNote* noteArray[NUM_NOTES];
+    std::array<Value, NumParams> vals;
+    std::array<PianoNote*, NUM_NOTES> voiceList{};
+    size_t numActiveVoices = 0;
+    std::array<std::unique_ptr<PianoNote>, NUM_NOTES> noteArray;
     int blockSize;
     float Fs;
-    float* input = nullptr;
+    std::vector<float> input;
+    // multithread
+    bool wasMultiThread = true;
+    std::atomic<int> threadVoiceIndex_;
+    
+    struct ThreadData {
+        ThreadData() : waiter(0) {}
+        std::vector<float> buffer;
+        std::binary_semaphore waiter;
+        std::atomic<bool> complete{ false };
+        int size{};
+    };
+    std::unique_ptr<juce::Thread> auxThread;
+    ThreadData auxThreadData;
 
-#ifdef FDN_REVERB
-    Reverb *soundboard;
+    class RenderingThread : public juce::Thread {
+    public:
+        RenderingThread(Piano& piano)
+            : juce::Thread("piano render")
+            , parentPiano(piano) {}
+
+        void run() override {
+            while (!threadShouldExit())
+            {
+                parentPiano.auxThreadData.waiter.acquire();
+                std::fill_n(parentPiano.auxThreadData.buffer.begin(), parentPiano.auxThreadData.size, 0.0f);
+                int idx = parentPiano.threadVoiceIndex_.fetch_sub(1);
+                while (idx > 0)
+                {
+                    PianoNote* note = parentPiano.voiceList[idx - 1];
+                    for (size_t i = 0; i < parentPiano.auxThreadData.size; ++i)
+                    {
+                        parentPiano.auxThreadData.buffer[i] += note->goUp();
+                    }
+                    idx = parentPiano.threadVoiceIndex_.fetch_sub(1);
+                }
+                parentPiano.auxThreadData.complete = true;
+            }
+        }
+    private:
+        Piano& parentPiano;
+    };
+
+#if FDN_REVERB
+    std::unique_ptr<Reverb> soundboard;
 #else
-    ConvolveReverb<revSize> *soundboard;
+    std::unique_ptr<ConvolveReverb<revSize>> soundboard;
 #endif
 };
 

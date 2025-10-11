@@ -162,7 +162,9 @@ target_compile_definitions (${PLUGIN_NAME} PRIVATE
 								JUCE_IGNORE_VST3_MISMATCHED_PARAMETER_ID_WARNING=1
 								JucePlugin_PreferredChannelConfigurations={0,2}
 								_CRT_SECURE_NO_WARNINGS
+								JUCE_FORCE_USE_LEGACY_PARAM_IDS
 							)
+set(TARGET ${PLUGIN_NAME} PRIVATE CMAKE_CXX_STANDARD 20)
 
 if (APPLE)
     foreach(t ${FORMATS} "All" "")

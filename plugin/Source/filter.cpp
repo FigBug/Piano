@@ -51,10 +51,10 @@ void Filter::merge(const Filter &f)
 
     float* aa = (float*)malloc (size_t (n1 + 1) * sizeof(float));
     float* bb = (float*)malloc (size_t (n1 + 1) * sizeof(float));
-    memcpy (aa, a, size_t (n1+1) * sizeof(float));
-    memcpy (bb, b, size_t (n1+1) * sizeof(float));
-    memset (a, 0, size_t (n+1) * sizeof(float));
-    memset (b, 0, size_t (n+1) * sizeof(float));
+    memcpy (aa, a.Get(), size_t (n1+1) * sizeof(float));
+    memcpy (bb, b.Get(), size_t (n1+1) * sizeof(float));
+    memset (a.Get(), 0, size_t (n+1) * sizeof(float));
+    memset (b.Get(), 0, size_t (n+1) * sizeof(float));
 
     for(int j=0;j<=n1;j++) {
         for(int k=0;k<=f.n;k++) {
@@ -99,31 +99,35 @@ static float Db (float B, float f, int M)
 
 Filter::~Filter()
 {
-	free_memalign(b);
-	free_memalign(a);
-	free_memalign(x);
-	free_memalign(y);
+    // _aligned_free(b);
+    // _aligned_free(a);
+    // _aligned_free(x);
+    // _aligned_free(y);
 }
 
 Filter::Filter(int nmax_)
 {
     nmax = nmax_;
     int n4 = nmax / 4;
-    posix_memalign((void**)&b,32,size_t(n4+3)*sizeof(vec4));
-    posix_memalign((void**)&a,32,size_t(n4+3)*sizeof(vec4));
-    posix_memalign((void**)&x,32,2*size_t(n4+3)*sizeof(vec4));
-    posix_memalign((void**)&y,32,2*size_t(n4+3)*sizeof(vec4));
+    // posix_memalign((void**)&b,32,size_t(n4+3)*sizeof(vec4));
+    // posix_memalign((void**)&a,32,size_t(n4+3)*sizeof(vec4));
+    // posix_memalign((void**)&x,32,2*size_t(n4+3)*sizeof(vec4));
+    // posix_memalign((void**)&y,32,2*size_t(n4+3)*sizeof(vec4));
 
-    memset(x,0,2*size_t(n4+3)*sizeof(vec4));
-    memset(y,0,2*size_t(n4+3)*sizeof(vec4));
-    memset(b,0,size_t(n4+3)*sizeof(vec4));
-    memset(a,0,size_t(n4+3)*sizeof(vec4));
+    // memset(x,0,2*size_t(n4+3)*sizeof(vec4));
+    // memset(y,0,2*size_t(n4+3)*sizeof(vec4));
+    // memset(b,0,size_t(n4+3)*sizeof(vec4));
+    // memset(a,0,size_t(n4+3)*sizeof(vec4));
+    b.Reset((n4 + 3) * sizeof(vec4) / sizeof(float));
+    a.Reset(n4 + 3 * sizeof(vec4) / sizeof(float));
+    x.Reset(2 * (n4 + 3) * sizeof(vec4) / sizeof(float));
+    y.Reset(2 * (n4 + 3) * sizeof(vec4) / sizeof(float));
 
     int xsize = 2*4*(n4 + 2);
-    xend = x + xsize;
-    yend = y + xsize;
-    xc = x;
-    yc = y;
+    xend = x.Get() + xsize;
+    yend = y.Get() + xsize;
+    xc = x.Get();
+    yc = y.Get();
 
     xskip = xsize;
 }
@@ -131,9 +135,9 @@ Filter::Filter(int nmax_)
 void Filter::init(int upsample_)
 {
     upsample = upsample_;
-    bend = b + n;
-    aend = a + n - 1;
-    aend4 = a + n - 4;
+    bend = b.Get() + n;
+    aend = a.Get() + n - 1;
+    aend4 = a.Get() + n - 4;
 
     vec4 v0 = {a[3], a[3], a[3], 0};
     a0 = v0;
@@ -165,13 +169,13 @@ void Filter::init(int upsample_)
 
 float Filter::filter(float in)
 {
-    float *b = this->b;
+    float *b = this->b.Get();
     float *x = this->xc - n;
-    if(x < this->x) x += xskip;
+    if(x < this->x.Get()) x += xskip;
 
     *xc = in;
     xc++;
-    if(xc>=xend) xc = this->x;
+    if(xc>=xend) xc = this->x.Get();
 
 
     float out = 0;
@@ -182,9 +186,9 @@ float Filter::filter(float in)
         x += upsample;
     }
 
-    float *a = this->a;
+    float *a = this->a.Get();
     float *y = this->yc - n;
-    if(y < this->y) y += xskip;
+    if(y < this->y.Get()) y += xskip;
     while(a <= aend) {
         if(y >= yend) y -= xskip;
         out += *a * *y;
@@ -194,40 +198,40 @@ float Filter::filter(float in)
 
     *yc = out;
     yc++;
-    if(yc>=yend) yc = this->y;
+    if(yc>=yend) yc = this->y.Get();
 
     return out;
 }
 
 vec4 Filter::filter4(vec4 in)
 {
-    float *b = this->b;
+    float *b = this->b.Get();
     float *x = this->xc - n;
-    if(x < this->x) x += xskip;
+    if(x < this->x.Get()) x += xskip;
 
     simde_mm_store_ps(xc, in);
-    if(xc == this->x)
+    if(xc == this->x.Get())
         simde_mm_store_ps(xend, in);
     xc+=4;
-    if(xc>=xend) xc = this->x;
+    if(xc>=xend) xc = this->x.Get();
 
     vec4 out = {0};
 
     while(b <= bend) {
-        if(x >= xend) x = this->x;
+        if(x >= xend) x = this->x.Get();
         out = simde_mm_fmadd_ps(simde_mm_broadcast_ss(b), simde_mm_loadu_ps(x), out);
         b+=upsample;
         x+=upsample;
     }
 
     vec4 outa = {0};
-    float *a = this->a;
+    float *a = this->a.Get();
     float *y = this->yc - n;
-    if(y < this->y) y += xskip;
+    if(y < this->y.Get()) y += xskip;
 
     while(a <= aend4)
     {
-        if(y >= yend) y = this->y;
+        if(y >= yend) y = this->y.Get();
         outa = simde_mm_fmadd_ps(simde_mm_broadcast_ss(a), simde_mm_loadu_ps(y), outa);
         a+=upsample;
         y+=upsample;
@@ -236,7 +240,7 @@ vec4 Filter::filter4(vec4 in)
     out = simde_mm_add_ps (out, outa);
 
     y = yc - 4;
-    if(y < this->y) y += xskip;
+    if(y < this->y.Get()) y += xskip;
     vec4 y4 = simde_mm_loadu_ps(y);
 
     out = simde_mm_fmadd_ps (simde_mm_shuffle_ps (y4, y4, SIMDE_MM_SHUFFLE(0,3,2,1)), a0, out);
@@ -246,13 +250,13 @@ vec4 Filter::filter4(vec4 in)
 
     simde_mm_store_ps(yc, out);
 
-    if (yc == this->y)
+    if (yc == this->y.Get())
         simde_mm_store_ps(yend, out);
 
     yc += 4;
 
     if (yc>=yend)
-        yc = this->y;
+        yc = this->y.Get();
     
     return out;
 }
@@ -270,8 +274,8 @@ void Thiran::create(float D, int N, int upsample)
     }
     n = N*upsample;
 
-    memset (a, 0, size_t (n+1) * sizeof(float));
-    memset (b, 0, size_t (n+1) * sizeof(float));
+    memset (a.Get(), 0, size_t (n+1) * sizeof(float));
+    memset (b.Get(), 0, size_t (n+1) * sizeof(float));
 
     int choose = 1;
     for(int k=0;k<=N;k++) {

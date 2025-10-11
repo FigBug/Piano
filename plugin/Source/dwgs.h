@@ -2,6 +2,7 @@
 #define DWGS_H
 
 #include "filter.h"
+#include "AlignedArray.hpp"
 
 class dwgs;
 
@@ -36,64 +37,69 @@ public:
     vec4 tran2long4(int delay);
     int getDel2();
     
-    int downsample;
-    int delTab;
-    float *wave;
-    float *wave0;
-    float *wave1;
-    float *Fl;
+    int downsample{};
+    int delTab{};
+    // float *wave;
+    // float *wave0;
+    // float *wave1;
+    // float *Fl;
+    AlignedArray<float, 32> wave;
+    AlignedArray<float, 32> wave0;
+    AlignedArray<float, 32> wave1;
+    AlignedArray<float, 32> Fl;
     
-    float F[nMaxLongModes];
-    vec4 F4[nMaxLongModes];
+    float F[nMaxLongModes]{};
+    vec4 F4[nMaxLongModes]{};
     
-    float L;
-    float omega;
-    float f;
-    float inpos;
-    float B;
-    float longFreq1;
-    int nLongModes;
-    int upsample;
+    float L{};
+    float omega{};
+    float f{};
+    float inpos{};
+    float B{};
+    float longFreq1{};
+    int nLongModes{};
+    int upsample{};
     
-    int nDamper;
-    float c1;
-    float c3;
-    float c1M;
-    float c3M;
+    int nDamper{};
+    float c1{};
+    float c3{};
+    float c1M{};
+    float c3M{};
     
-    Loss loss;
+    Loss loss{};
     Thiran fracDelayTop;
     Thiran fracDelayBottom;
     Thiran hammerDelay;
     ThiranDispersion dispersion[4];
     
-    float *modeTable[nMaxLongModes];
-    float *modeTable4[nMaxLongModes];
-    float fLong[nMaxLongModes];
+    // float *modeTable[nMaxLongModes];
+    // float *modeTable4[nMaxLongModes];
+    AlignedArray<float, 32> modeTable[nMaxLongModes];
+    float fLong[nMaxLongModes]{};
     DWGResonator longModeResonator[nMaxLongModes];
     
-    float dDispersion;
-    float dTop;
-    float dHammer;
-    float dBottomAndLoss;
+    float dDispersion{};
+    float dTop{};
+    float dHammer{};
+    float dBottomAndLoss{};
     
-    float a0_0;
-    float a0_1, a0_2, a0_3, a0_4, a0_5;
-    float a1_1, a1_2, a1_3, a1_4, a1_5;
+    float a0_0{};
+    float a0_1{}, a0_2{}, a0_3{}, a0_4{}, a0_5{};
+    float a1_1{}, a1_2{}, a1_3{}, a1_4{}, a1_5{};
     
-    vec4 v0_0;
-    vec4 v0_1, v0_2, v0_3, v0_4, v0_5;
-    vec4 v1_1, v1_2, v1_3, v1_4, v1_5;
+    vec4 v0_0{};
+    vec4 v0_1{}, v0_2{}, v0_3{}, v0_4{}, v0_5{};
+    vec4 v1_1{}, v1_2{}, v1_3{}, v1_4{}, v1_5{};
     
     
-    int del0, del1, del2, del3, del4, del5;
+    int del0{}, del1{}, del2{}, del3{}, del4{}, del5{};
     Delay<DelaySize> d0;
     Delay<DelaySize> d1;
     Delay<DelaySize> d2;
     Delay<DelaySize> d3;
     
     
-    int M;
+    int M{};
 };
 
 #endif
