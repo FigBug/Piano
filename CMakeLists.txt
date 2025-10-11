@@ -4,7 +4,7 @@ cmake_minimum_required (VERSION 3.24.0 FATAL_ERROR)
 # Set for each plugin
 #
 set (PLUGIN_NAME Piano)
-set (PLUGIN_VERSION 1.0.0)
+set (PLUGIN_VERSION 1.0.1)
 set (BUNDLE_ID com.socalabs.Piano)
 set (AU_ID PianoAU)
 set (LV2_URI https://socalabs.com/piano/)
@@ -159,6 +159,7 @@ target_compile_definitions (${PLUGIN_NAME} PRIVATE
 								JUCE_USE_LAME_AUDIO_FORMAT=0
 								JUCE_USE_WINDOWS_MEDIA_FORMAT=0
 								DONT_SET_USING_JUCE_NAMESPACE=1
+								JUCE_IGNORE_VST3_MISMATCHED_PARAMETER_ID_WARNING=1
 								JucePlugin_PreferredChannelConfigurations={0,2}
 								_CRT_SECURE_NO_WARNINGS
 								JUCE_FORCE_USE_LEGACY_PARAM_IDS
@@ -166,8 +167,6 @@ target_compile_definitions (${PLUGIN_NAME} PRIVATE
 set(TARGET ${PLUGIN_NAME} PRIVATE CMAKE_CXX_STANDARD 20)
 
 if (APPLE)
-	set_target_properties("juce_vst3_helper" PROPERTIES XCODE_ATTRIBUTE_CLANG_LINK_OBJC_RUNTIME NO)
-
     foreach(t ${FORMATS} "All" "")
         set(tgt ${CMAKE_PROJECT_NAME})
         if (NOT t STREQUAL "")
