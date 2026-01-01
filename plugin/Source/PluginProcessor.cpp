@@ -148,7 +148,7 @@ PianoAudioProcessor::PianoAudioProcessor()
     params.add (addExtParam ("LongitudinalGamma", "Longitudinal Gamma", "", "" , { 0.0f, 1.0f }, 0.5f, {0.0f}, textFunction));
     params.add (addExtParam ("LongitudinalGammaQuadratic", "Longitudinal Gamma Quadratic", "", "" , { 0.0f, 1.0f }, 0.0f, {0.0f}, textFunction));
     params.add (addExtParam ("LongitudinalGammaDamped", "Longitudinal Gamma Damped", "", "" , { 0.0f, 1.0f }, 0.5f, {0.0f}, textFunction));
-    params.add (addExtParam ("LongitudinalGammaQuadraticDamped", "Longitudinal Gamma Quadratic Damped", "", "" , { 0.0f, 1.0f }, 0.0f, {0.0f}, textFunction));
+    params.add (addExtParam ("LongitudinalGammaQuadDamped", "Longitudinal Gamma Quadratic Damped", "", "" , { 0.0f, 1.0f }, 0.0f, {0.0f}, textFunction));
     params.add (addExtParam ("LongitudinalMix", "Longitudinal Mix", "", "" , { 0.0f, 1.0f }, 0.5f, {0.0f}, textFunction));
     params.add (addExtParam ("LongitudinalTransverseMix", "Longitudinal Transverse Mix", "", "" , { 0.0f, 1.0f }, 0.5f, {0.0f}, textFunction));
     params.add (addExtParam ("Volume", "Volume", "", "" , { 0.0f, 1.0f }, 0.5f, {0.0f}, textFunction));
