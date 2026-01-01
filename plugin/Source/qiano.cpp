@@ -1,9 +1,10 @@
-#include <math.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include <cmath>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <algorithm>
 #include "utils.h"
 #include "qiano.h"
-#include <string.h>
 
 #define HSTRING 1
 
@@ -145,8 +146,8 @@ float PianoNote::goDownDelayed()
         alignas(32) float in[8];
         if(piano->USE_DWGS4 && hammer->isEscaped())
         {
-            *((vec4*)in) = go4();
-            *((vec4*)(in+4)) = go4();
+            simde_mm_store_ps(in, go4());
+            simde_mm_store_ps(in + 4, go4());
         }
         else
         {
@@ -257,6 +258,12 @@ vec4 PianoNote::go4()
             stringHT[k]->init_string4();
 #endif
         }
+        // Align indices to 4-byte boundaries for SIMD operations
+        // Without this, switching from go() to go4() can cause buffer overruns
+        tTran = (tTran + 3) & ~3;
+        if (tTran >= TranBufferSize) tTran = 0;
+        tTranRead = (tTranRead + 3) & ~3;
+        if (tTranRead >= TranBufferSize) tTranRead = 0;
         bInit4 = true;
     }
 
@@ -353,33 +360,19 @@ void Piano::init (float Fs_, int blockSize_)
     PianoNote::fillFrequencyTable();
 
     for (int k = PIANO_MIN_NOTE; k <= PIANO_MAX_NOTE; k++)
-    {
-        if(noteArray[k]) delete noteArray[k];
-        noteArray[k] = new PianoNote(k, int (Fs), this);
-    }
+        noteArray[k] = std::make_unique<PianoNote>(k, int (Fs), this);
 
-    if (input)
-        delete input;
-
-    input = new float[size_t (blockSize)];
-
-    if (soundboard)
-        delete soundboard;
+    input.resize(size_t (blockSize));
 
 #ifdef FDN_REVERB
-    soundboard = new Reverb (Fs);
+    soundboard = std::make_unique<Reverb>(Fs);
 #else
-    soundboard = new ConvolveReverb<revSize>(blockSize);
+    soundboard = std::make_unique<ConvolveReverb<revSize>>(blockSize);
 #endif
 }
 
 Piano::Piano()
 {
-    for (int k = PIANO_MIN_NOTE; k <= PIANO_MAX_NOTE; k++)
-        noteArray[k] = nullptr;
-
-    input = nullptr;
-    soundboard = nullptr;
 }
 
 PianoNote::PianoNote (int note_, int Fs_, Piano* piano_)
@@ -401,10 +394,10 @@ PianoNote::PianoNote (int note_, int Fs_, Piano* piano_)
 
     for (int k = 0; k < nstrings; k++)
     {
-        stringT[k] = new dwgs();
-        stringHT[k] = new dwgs();
+        stringT[k] = std::make_unique<dwgs>();
+        stringHT[k] = std::make_unique<dwgs>();
     }
-    hammer = new Hammer();
+    hammer = std::make_unique<Hammer>();
 
     outputdelay.setDelay(Fs);
 
@@ -550,7 +543,7 @@ void PianoNote::triggerOn (float velocity, float* tune)
 		else
             fk = f*(1 + (TUNE[nstrings-1][k]-1) * v[pStringDetuning]);
         
-        upsampleMin = max(upsampleMin, stringT[k]->getMinUpsample(downsample, Fs, fk, hp, B));
+        upsampleMin = std::max(upsampleMin, stringT[k]->getMinUpsample(downsample, Fs, fk, hp, B));
     }
     upsample = upsampleMin;
 
@@ -660,21 +653,10 @@ bool PianoNote::isActive()
 
 PianoNote::~PianoNote()
 {
-    for (int k=0;k<nstrings;k++)
-    {
-        delete stringT[k];
-        delete stringHT[k];
-    }
-    delete hammer;
 }
 
 Piano::~Piano()
 {
-    for (int k = PIANO_MIN_NOTE; k <= PIANO_MAX_NOTE; k++)
-        delete noteArray[k];
-
-    delete input;
-    delete soundboard;
 }
 
 void Piano::process (float* out, int samples)
@@ -693,13 +675,13 @@ void Piano::process (float* out, int samples)
         out[i] = vals[pVolume] * soundboard->reverb(output);
 #else
         out[i] =  vals[pVolume] * output;
-        input[i] =  vals[pVolume] * output;
+        input[size_t(i)] =  vals[pVolume] * output;
 #endif
     }
 
 
 #ifndef FDN_REVERB
-    soundboard->fft_conv(input, out, samples);
+    soundboard->fft_conv(input.data(), out, samples);
 #endif
 }
 
@@ -743,10 +725,10 @@ void Piano::process (float** outS, int sampleFrames, juce::MidiBuffer& midi)
 
         if (m.getNoteNumber() >= PIANO_MIN_NOTE && m.getNoteNumber() <= PIANO_MAX_NOTE)
         {
-            PianoNote* v = noteArray[m.getNoteNumber()];
+            PianoNote* v = noteArray[size_t(m.getNoteNumber())].get();
             if (m.isNoteOn())
             {
-                if (! (noteArray[m.getNoteNumber()]->isActive()))
+                if (! (noteArray[size_t(m.getNoteNumber())]->isActive()))
                     addVoice (v);
 
                 float velocity = vals[pMaxVelocity] * pow ((float)(m.getVelocity() / 127.0f), 2.0f);
@@ -767,7 +749,7 @@ void Piano::process (float** outS, int sampleFrames, juce::MidiBuffer& midi)
 
 void Piano::triggerOn (int note, float velocity, float* tune)
 {
-    PianoNote* v = noteArray[note];
+    PianoNote* v = noteArray[size_t(note)].get();
     addVoice (v);
     v->triggerOn (velocity,tune);
 }

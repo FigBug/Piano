@@ -54,13 +54,7 @@ FFTConvolver::~FFTConvolver()
 
 
 void FFTConvolver::reset()
-{  
-    for (size_t i=0; i<_segCount; ++i)
-    {
-        delete _segments[i];
-        delete _segmentsIR[i];
-    }
-    
+{
     _blockSize = 0;
     _segSize = 0;
     _segCount = 0;
@@ -110,18 +104,18 @@ bool FFTConvolver::init(size_t blockSize, const Sample* ir, size_t irLen)
     // Prepare segments
     for (size_t i=0; i<_segCount; ++i)
     {
-        _segments.push_back(new SplitComplex(_fftComplexSize));    
+        _segments.push_back(std::make_unique<SplitComplex>(_fftComplexSize));
     }
-    
+
     // Prepare IR
     for (size_t i=0; i<_segCount; ++i)
     {
-        SplitComplex* segment = new SplitComplex(_fftComplexSize);
+        auto segment = std::make_unique<SplitComplex>(_fftComplexSize);
         const size_t remaining = irLen - (i * _blockSize);
         const size_t sizeCopy = (remaining >= _blockSize) ? _blockSize : remaining;
         CopyAndPad(_fftBuffer, &ir[i*_blockSize], sizeCopy);
         _fft.fft(_fftBuffer.data(), segment->re(), segment->im());
-        _segmentsIR.push_back(segment);
+        _segmentsIR.push_back(std::move(segment));
     }
     
     // Prepare convolution buffers  

@@ -1,15 +1,11 @@
 #include "filter.h"
-#include <math.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
 #include "utils.h"
 #include "AudioFFT.h"
-#include "filter.h"
-#include <math.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
+#include <cmath>
+#include <cstdlib>
+#include <cstdio>
+#include <cstring>
+#include <vector>
 
 inline void complex_divide(float Hn[2], float Hd[2], float H[2]) 
 {
@@ -49,22 +45,20 @@ void Filter::merge(const Filter &f)
     int n1 = n;
     n = n1 + f.n;
 
-    float* aa = (float*)malloc (size_t (n1 + 1) * sizeof(float));
-    float* bb = (float*)malloc (size_t (n1 + 1) * sizeof(float));
-    memcpy (aa, a, size_t (n1+1) * sizeof(float));
-    memcpy (bb, b, size_t (n1+1) * sizeof(float));
+    std::vector<float> aa(size_t(n1 + 1));
+    std::vector<float> bb(size_t(n1 + 1));
+    memcpy (aa.data(), a, size_t (n1+1) * sizeof(float));
+    memcpy (bb.data(), b, size_t (n1+1) * sizeof(float));
     memset (a, 0, size_t (n+1) * sizeof(float));
     memset (b, 0, size_t (n+1) * sizeof(float));
 
     for(int j=0;j<=n1;j++) {
         for(int k=0;k<=f.n;k++) {
-            b[j+k] += bb[n1-j]*f.b[f.n-k];
-            a[j+k] -= aa[n1-j]*f.a[f.n-k];
+            b[j+k] += bb[size_t(n1-j)]*f.b[f.n-k];
+            a[j+k] -= aa[size_t(n1-j)]*f.a[f.n-k];
         }
     }
 
-    free(aa);
-    free(bb);
     init(upsample);
 }
 
@@ -99,7 +93,10 @@ static float Db (float B, float f, int M)
 
 Filter::~Filter()
 {
-
+    aligned_free(b);
+    aligned_free(a);
+    aligned_free(x);
+    aligned_free(y);
 }
 
 Filter::Filter(int nmax_)

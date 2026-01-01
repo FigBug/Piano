@@ -2,13 +2,12 @@
 #define DWGS_H
 
 #include "filter.h"
+#include <array>
 
 class dwgs;
 
-enum {
-    DelaySize = 4096,
-    nMaxLongModes = 128
-};
+inline constexpr int DelaySize = 4096;
+inline constexpr int nMaxLongModes = 128;
 
 class dwgs
 {
@@ -38,13 +37,13 @@ public:
     
     int downsample;
     int delTab;
-    float *wave;
-    float *wave0;
-    float *wave1;
-    float *Fl;
-    
-    float F[nMaxLongModes];
-    vec4 F4[nMaxLongModes];
+    AlignedBuffer<float> wave;
+    AlignedBuffer<float> wave0;
+    AlignedBuffer<float> wave1;
+    AlignedBuffer<float> Fl;
+
+    std::array<float, nMaxLongModes> F;
+    std::array<vec4, nMaxLongModes> F4;
     
     float L;
     float omega;
@@ -67,10 +66,10 @@ public:
     Thiran hammerDelay;
     ThiranDispersion dispersion[4];
     
-    float *modeTable[nMaxLongModes];
-    float *modeTable4[nMaxLongModes];
-    float fLong[nMaxLongModes];
-    DWGResonator longModeResonator[nMaxLongModes];
+    std::array<AlignedBuffer<float>, nMaxLongModes> modeTable;
+    std::array<AlignedBuffer<float>, nMaxLongModes> modeTable4;
+    std::array<float, nMaxLongModes> fLong;
+    std::array<DWGResonator, nMaxLongModes> longModeResonator;
     
     float dDispersion;
     float dTop;

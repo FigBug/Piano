@@ -3,6 +3,9 @@
 #define PIANO_H
 
 #include <JuceHeader.h>
+#include <memory>
+#include <array>
+#include <vector>
 
 #define PIANO_MIN_NOTE 21
 #define PIANO_MAX_NOTE 108
@@ -140,9 +143,9 @@ protected:
     float f;
     int nstrings;
 
-    dwgs* stringT[3];
-    dwgs* stringHT[3];
-    Hammer* hammer;
+    std::array<std::unique_ptr<dwgs>, 3> stringT;
+    std::array<std::unique_ptr<dwgs>, 3> stringHT;
+    std::unique_ptr<Hammer> hammer;
 
     alignas(32) float outUp[8];
     alignas(32) float outDown[8];
@@ -186,15 +189,15 @@ protected:
     friend class PianoNote;
     Value vals[NumParams];
     PianoNote* voiceList;
-    PianoNote* noteArray[NUM_NOTES];
+    std::array<std::unique_ptr<PianoNote>, NUM_NOTES> noteArray;
     int blockSize;
     float Fs;
-    float* input = nullptr;
+    std::vector<float> input;
 
 #ifdef FDN_REVERB
-    Reverb *soundboard;
+    std::unique_ptr<Reverb> soundboard;
 #else
-    ConvolveReverb<revSize> *soundboard;
+    std::unique_ptr<ConvolveReverb<revSize>> soundboard;
 #endif
 };
 

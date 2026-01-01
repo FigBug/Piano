@@ -3,7 +3,52 @@
 #include <stdio.h>
 #include "utils.h"
 #include <stdlib.h>
+#include <cassert>
+#include <cstdint>
+
+#ifdef _WIN32
+#define NOMINMAX
+#include <windows.h>
+#define DEBUG_OUTPUT(msg) do { OutputDebugStringA(msg); fprintf(stderr, "%s", msg); fflush(stderr); } while(0)
+#else
+#define DEBUG_OUTPUT(msg) do { fprintf(stderr, "%s", msg); fflush(stderr); } while(0)
+#endif
+
 using namespace std;
+
+// Debug assertion macro - uses abort() so it works in Release builds too
+#define DWGS_ASSERT(cond, msg) do { \
+    if (!(cond)) { \
+        char _buf[512]; \
+        snprintf(_buf, sizeof(_buf), "DWGS ASSERT FAILED: %s\n  File: %s, Line: %d\n  Condition: %s\n", \
+                msg, __FILE__, __LINE__, #cond); \
+        DEBUG_OUTPUT(_buf); \
+        abort(); \
+    } \
+} while(0)
+
+// Check if pointer is valid (not null, not small int, not -1/high invalid)
+#define DWGS_CHECK_PTR(ptr, name) do { \
+    uintptr_t p = (uintptr_t)(ptr); \
+    if (p == 0 || p < 0x10000 || p > 0x00007FFFFFFFFFFF) { \
+        char _buf[512]; \
+        snprintf(_buf, sizeof(_buf), "DWGS BAD PTR: %s = %p (0x%llx) - invalid pointer!\n  File: %s, Line: %d\n", \
+                name, (void*)(ptr), (unsigned long long)p, __FILE__, __LINE__); \
+        DEBUG_OUTPUT(_buf); \
+        abort(); \
+    } \
+} while(0)
+
+// Helper to check if a pointer is within a buffer range
+#define DWGS_CHECK_PTR_RANGE(ptr, base, size, msg) do { \
+    if ((ptr) < (base) || (ptr) >= (base) + (size)) { \
+        char _buf[512]; \
+        snprintf(_buf, sizeof(_buf), "DWGS PTR RANGE FAILED: %s\n  ptr=%p, base=%p, size=%d, offset=%td\n  File: %s, Line: %d\n", \
+                msg, (void*)(ptr), (void*)(base), (int)(size), (ptrdiff_t)((ptr) - (base)), __FILE__, __LINE__); \
+        DEBUG_OUTPUT(_buf); \
+        abort(); \
+    } \
+} while(0)
 
 
 /*
@@ -36,6 +81,31 @@ vec4 dwgs::tran2long4 (int delay)
         return out;
     }
 
+    // Defensive checks: ensure buffers are allocated and valid
+    DWGS_CHECK_PTR(wave0.get(), "wave0");
+    DWGS_CHECK_PTR(wave.get(), "wave");
+    DWGS_CHECK_PTR(Fl.get(), "Fl");
+
+    // Verify delay buffer pointers are valid (not null and reasonable)
+    DWGS_ASSERT(d1.x != nullptr, "d1.x is null");
+    DWGS_ASSERT(d2.x != nullptr, "d2.x is null");
+
+    // Check that x points to x_ + 8 (sanity check for Delay object integrity)
+    DWGS_ASSERT(d1.x == d1.x_ + 8, "d1.x doesn't point to d1.x_ + 8 - object may be corrupted");
+    DWGS_ASSERT(d2.x == d2.x_ + 8, "d2.x doesn't point to d2.x_ + 8 - object may be corrupted");
+
+    // Check delay parameters are reasonable
+    DWGS_ASSERT(delTab >= 0 && delTab < DelaySize, "delTab out of range");
+    DWGS_ASSERT(del0 >= 0 && del0 < DelaySize, "del0 out of range");
+    DWGS_ASSERT(del1 >= 0 && del1 < DelaySize, "del1 out of range");
+    DWGS_ASSERT(del2 >= 0 && del2 < DelaySize, "del2 out of range");
+    DWGS_ASSERT(del4 >= 0 && del4 < DelaySize, "del4 out of range");
+    DWGS_ASSERT(delay >= 0, "delay is negative");
+
+    // Check cursor positions
+    DWGS_ASSERT(d1.cursor >= 0 && d1.cursor < DelaySize, "d1.cursor out of range");
+    DWGS_ASSERT(d2.cursor >= 0 && d2.cursor < DelaySize, "d2.cursor out of range");
+
     alignas(32) float out[4];
     float *x;
     int cur;
@@ -49,34 +119,31 @@ vec4 dwgs::tran2long4 (int delay)
     cur = (d1.cursor + DelaySize - delay + del0 - del1 + 1 ) % DelaySize;
     wave10 = wave0 + delTab + 4;
 
+    DWGS_ASSERT(n > 0, "n (bottom) must be positive");
+    DWGS_ASSERT(cur >= 0 && cur < DelaySize, "cur (bottom) out of DelaySize range");
+
     if(n <= cur)
     {
         float *x1 = x + cur;
+        // Check bounds: reading x1[-n] to x1[-1], i.e., x[cur-n] to x[cur-1]
+        DWGS_ASSERT(cur - n >= 0, "bottom memcpy: cur-n underflow");
+        DWGS_CHECK_PTR_RANGE(x1 - n, x, DelaySize, "bottom x1-n out of d1.x range");
+        // Check wave10 bounds: writing wave10[-n] to wave10[-1], i.e., wave0[delTab+4-n] to wave0[delTab+3]
+        DWGS_ASSERT(wave10 - n >= wave0, "bottom memcpy: wave10-n underflow");
         memcpy (wave10-n, x1-n, size_t (n) * sizeof(float));
-        /*
-         for(int i=-1; i>=-n; i--) {
-         wave10[i] = x1[i];
-         }
-         */
     }
     else
     {
         float *x1 = x + cur;
+        DWGS_ASSERT(cur >= 0, "bottom else: cur must be non-negative");
+        DWGS_CHECK_PTR_RANGE(x1 - cur, x, DelaySize, "bottom else x1-cur out of range");
         memcpy(wave10-cur, x1-cur, size_t (cur) * sizeof(float));
-        /*
-         for(int i=-1; i>=-cur; i--) {
-         wave10[i] = x1[i];
-         }
-         */
 
         int cur2 = cur + DelaySize;
         x1 = x + cur2;
+        DWGS_ASSERT(cur2 >= n, "bottom else: cur2 must be >= n");
+        DWGS_CHECK_PTR_RANGE(x1 - n, x, DelaySize + 8, "bottom else x1-n (wrapped) out of range");
         memcpy(wave10-n, x1-n, size_t (n-cur) * sizeof(float));
-        /*
-         for(int i=-cur-1; i>=-n; i--) {
-         wave10[i] = x1[i];
-         }
-         */
     }
 
     /********* top *********/
@@ -86,76 +153,60 @@ vec4 dwgs::tran2long4 (int delay)
         x = d2.x;
         cur = (d2.cursor + DelaySize - delay - 4 + j + del4) % DelaySize;
 
-        float* wave10 = wave0 + j;
-#ifdef STRING_DEBUG
-        for(int i=0; i<=delTab; i++)
-            printf("%g ",wave10[i]);
-        printf("\n");
-#endif
+        DWGS_ASSERT(cur >= 0 && cur < DelaySize, "top cur out of range");
 
+        float* wave10 = wave0 + j;
+        DWGS_ASSERT(wave10 >= wave0, "top wave10 underflow");
 
         n = del0 + del2 + del4 + 5;
+        DWGS_ASSERT(n > 0, "top n must be positive");
+        DWGS_ASSERT(n < DelaySize, "top n exceeds DelaySize");
+
         if (n <= cur)
         {
             float *x1 = x + cur;
+            // ms4 reads from x1-n+1 backwards for n elements
+            // Check: x1-n+1 must be >= x (i.e., cur-n+1 >= 0)
+            DWGS_ASSERT(cur - n + 1 >= 0, "top ms4: cur-n+1 underflow");
+            DWGS_CHECK_PTR_RANGE(x1 - n + 1, x, DelaySize, "top ms4 x1-n+1 out of range");
+            DWGS_CHECK_PTR_RANGE(x1, x, DelaySize, "top ms4 x1 out of range");
             ms4 (wave10, x1 - n + 1, wave, n);
-
-            /*
-             for(int i=0; i<n; i++) {
-             wave1[i] = x1[-i];
-             }
-             */
         }
         else
         {
             float *x1 = x + cur;
+            // ms4 reads from x1-cur for cur+1 elements
+            DWGS_ASSERT(cur >= 0, "top else: cur must be non-negative for ms4");
+            DWGS_CHECK_PTR_RANGE(x1 - cur, x, DelaySize, "top else ms4 x1-cur out of range");
             ms4(wave10,x1-cur,wave,cur+1);
-            /*
-             for(int i=0; i<=cur; i++) {
-             wave1[i] = x1[-i];
-             }
-             */
+
             int cur2 = cur + DelaySize;
             x1 = x + cur2;
+            DWGS_ASSERT(cur2 >= 0 && cur2 < 2 * DelaySize, "top else cur2 out of range");
 
             int n4 = std::min((((cur+1)>>2)<<2) + 3,n);
-            //cerr << "n4/n/cursor = " << n4 << "/" << n <<  "/" << cur << "\n";
 
             for(int i=cur+1; i<=n4; i++) {
-                //wave1[i] = x1[-i];
+                DWGS_ASSERT(i >= 0 && i < delTab + 32, "top else loop: wave index out of range");
+                DWGS_ASSERT(cur2 - i >= 0, "top else loop: x1[-i] underflow");
                 wave[i] = square(wave10[i] - x1[-i]);
                 cur++;
             }
 
             if(cur + 1 < n) {
+                DWGS_ASSERT(cur + 1 >= 0, "top else ms4 #2: cur+1 must be non-negative");
+                DWGS_CHECK_PTR_RANGE(x1 - n + 1, x, DelaySize + 8, "top else ms4 #2 x1-n+1 out of range");
                 ms4(wave10+cur+1,x1-n+1,wave+cur+1,n-cur-1);
-                /*
-                 for(int i=cur+1; i<n; i++) {
-                 wave1[i] = x1[-i];
-                 }
-                 */
             }
         }
 
-#ifdef STRING_DEBUG
-        for(int i=0; i<=delTab; i++) {
-            printf("%g ",wave1[i]);
-        }
-        printf("\n");
-#endif
-
         diff4(wave, Fl, delTab+1);
-
-#ifdef LONG_DEBUG
-        for(int i=0; i<=delTab; i++) {
-            printf("%g ",Fl[i+3]);
-        }
-        printf("\n");
-#endif
 
         out[j] = 0;
         for(int k=1; k<=nLongModes; k++) {
-            float *tab = modeTable[k];
+            DWGS_ASSERT(k >= 0 && k < nMaxLongModes, "modeTable index out of range");
+            float *tab = modeTable[size_t(k)].get();
+            DWGS_ASSERT(tab != nullptr, "modeTable[k] is null");
             float F = sse_dot (delTab + 4, tab, Fl);
             float Fbl = longModeResonator[k].go (F);
             out[j] += Fbl;
@@ -169,15 +220,50 @@ dwgs::dwgs() :
 fracDelayTop(8), fracDelayBottom(16), hammerDelay(8), d2(3)
 
 {
-    memset(modeTable,0,nMaxLongModes*sizeof(float*));
+    // AlignedBuffer members are already default-initialized to empty
     c1 = 0;
     c3 = 0;
     nDamper = 0;
+    nLongModes = 0;
+    delTab = 0;
+
+    // Initialize delay variables to prevent garbage values in tran2long4
+    del0 = 0;
+    del1 = 0;
+    del2 = 0;
+    del3 = 0;
+    del4 = 0;
+    del5 = 0;
+
+    // Initialize other numeric members
+    downsample = 1;
+    upsample = 1;
+    M = 1;
+    L = 0;
+    omega = 0;
+    f = 0;
+    inpos = 0;
+    B = 0;
+    longFreq1 = 0;
+    dDispersion = 0;
+    dTop = 0;
+    dHammer = 0;
+    dBottomAndLoss = 0;
+    c1M = 0;
+    c3M = 0;
 
     vec4 z = {0};
+    v0_0 = z;
+    v0_1 = z;
     v0_2 = z;
-    v1_3 = z;
+    v0_3 = z;
     v0_4 = z;
+    v0_5 = z;
+    v1_1 = z;
+    v1_2 = z;
+    v1_3 = z;
+    v1_4 = z;
+    v1_5 = z;
 
     a0_0 = 0.0f;
     a0_1 = 0.0f;
@@ -190,6 +276,12 @@ fracDelayTop(8), fracDelayBottom(16), hammerDelay(8), d2(3)
     a1_3 = 0.0f;
     a1_4 = 0.0f;
     a1_5 = 0.0f;
+
+    // Verify Delay buffers are properly constructed
+    DWGS_ASSERT(d0.x == d0.x_ + 8, "dwgs ctor: d0.x not properly initialized");
+    DWGS_ASSERT(d1.x == d1.x_ + 8, "dwgs ctor: d1.x not properly initialized");
+    DWGS_ASSERT(d2.x == d2.x_ + 8, "dwgs ctor: d2.x not properly initialized");
+    DWGS_ASSERT(d3.x == d3.x_ + 8, "dwgs ctor: d3.x not properly initialized");
 }
 
 void dwgs::set(float Fs, int longmodes, int downsample, int upsample, float f, float c1, float c3, float B, float L, float longFreq1, float gammaL, float gammaL2, float inpos, float Z)
@@ -271,13 +363,13 @@ void dwgs::set(float Fs, int longmodes, int downsample, int upsample, float f, f
 
     //logf("%d %d %d %d %g %g\n", del0, del1, del2, del3, delta, delta2);
 
-    posix_memalign ((void**)&wave0, 32, size_t (delTab + 32) * sizeof(float));
-    posix_memalign ((void**)&wave1, 32, size_t (delTab + 32) * sizeof(float));
-    posix_memalign ((void**)&wave, 32, size_t (delTab + 32) * sizeof(float));
-    posix_memalign ((void**)&Fl, 32, size_t (delTab + 32) * sizeof(float));
-    memset (wave0, 0, size_t (delTab + 32) * sizeof(float));
-    memset (wave1, 0, size_t(delTab + 32) * sizeof(float));
-    memset (Fl, 0, size_t (delTab + 32) * sizeof(float));
+    wave0.allocate(size_t(delTab + 32));
+    wave1.allocate(size_t(delTab + 32));
+    wave.allocate(size_t(delTab + 32));
+    Fl.allocate(size_t(delTab + 32));
+    wave0.clear();
+    wave1.clear();
+    Fl.clear();
 
     //logf("dwgs top %d %d %d %d %g %g %g %g %g %g %g %g\n",del0,del1,del2,del3,dHammer+1+del2+dTop,del1+del3+dDispersion+lowpassdelay+dBottom, dTop, dBottom, dHammer, inpos*deltot, lowpassdelay, dDispersion);
 
@@ -301,21 +393,20 @@ void dwgs::set(float Fs, int longmodes, int downsample, int upsample, float f, f
 #endif
         if(delTab) {
             float n = float (PI) * k / delHalf;
-            if(modeTable[k]) delete modeTable[k];
-            posix_memalign ((void**)&modeTable[k], 32, size_t (delTab + 8) * sizeof (float));
+            modeTable[size_t(k)].allocate(size_t(delTab + 8));
 
             for (int i = 0; i <= delTab; i++)
             {
                 float d = i + delta;
                 float s = sin(d*n);
-                modeTable[k][i+3] = s;
+                modeTable[size_t(k)][size_t(i+3)] = s;
             }
             //logf("maxd = %g/ %g\n",delTab+delta,delHalf);
-            modeTable[k][0] = 0;
-            modeTable[k][1] = 0;
-            modeTable[k][2] = 0;
-            modeTable[k][3] *= (0.5f + delta);
-            modeTable[k][delTab+3] *= (0.5f + delta2);
+            modeTable[size_t(k)][0] = 0;
+            modeTable[size_t(k)][1] = 0;
+            modeTable[size_t(k)][2] = 0;
+            modeTable[size_t(k)][3] *= (0.5f + delta);
+            modeTable[size_t(k)][size_t(delTab+3)] *= (0.5f + delta2);
         }
     }
 #ifdef LONGMODE_DEBUG
@@ -366,6 +457,14 @@ void dwgs::damper (float c1, float c3, float gammaL, float gammaL2, int nDamper)
 
 dwgs::~dwgs()
 {
+    // AlignedBuffer members automatically deallocate in their destructors
+    // Poison delay buffer pointers to detect use-after-free
+    d0.x = reinterpret_cast<float*>(0xDEADBEEFDEADBEEF);
+    d1.x = reinterpret_cast<float*>(0xDEADBEEFDEADBEEF);
+    d2.x = reinterpret_cast<float*>(0xDEADBEEFDEADBEEF);
+    d3.x = reinterpret_cast<float*>(0xDEADBEEFDEADBEEF);
+
+    nLongModes = -1;  // Poison this too
 }
 
 int dwgs::getMaxDecimation(int downsample, int upsample, float Fs, float f, float magic)
@@ -432,6 +531,12 @@ float dwgs::next_input_velocity()
 // returns input to soundboard
 float dwgs::go_string()
 {
+    // Verify delay buffer integrity at start
+    DWGS_ASSERT(d0.x == d0.x_ + 8, "go_string: d0.x corrupted");
+    DWGS_ASSERT(d1.x == d1.x_ + 8, "go_string: d1.x corrupted");
+    DWGS_ASSERT(d2.x == d2.x_ + 8, "go_string: d2.x corrupted");
+    DWGS_ASSERT(d3.x == d3.x_ + 8, "go_string: d3.x corrupted");
+
     if (nDamper > 0)
     {
         if((nDamper & 3) == 0)
@@ -540,6 +645,16 @@ void dwgs::init_string4()
 
 vec4 dwgs::go_string4()
 {
+    // Verify delay buffer integrity at start
+    DWGS_ASSERT(d0.x == d0.x_ + 8, "go_string4: d0.x corrupted");
+    DWGS_ASSERT(d1.x == d1.x_ + 8, "go_string4: d1.x corrupted");
+    DWGS_ASSERT(d2.x == d2.x_ + 8, "go_string4: d2.x corrupted");
+    DWGS_ASSERT(d3.x == d3.x_ + 8, "go_string4: d3.x corrupted");
+    DWGS_ASSERT(d0.cursor >= 0 && d0.cursor < DelaySize, "go_string4: d0.cursor out of range");
+    DWGS_ASSERT(d1.cursor >= 0 && d1.cursor < DelaySize, "go_string4: d1.cursor out of range");
+    DWGS_ASSERT(d2.cursor >= 0 && d2.cursor < DelaySize, "go_string4: d2.cursor out of range");
+    DWGS_ASSERT(d3.cursor >= 0 && d3.cursor < DelaySize, "go_string4: d3.cursor out of range");
+
     if(nDamper > 0) {
         if((nDamper & 3) == 0) {
             c1 *= c1M;
@@ -605,9 +720,30 @@ float dwgs::longTran() {
 float dwgs::tran2long(int delay)
 {
     if(nLongModes == 0) return 0;
-    
+
+    // Defensive checks: ensure buffers are allocated and valid
+    DWGS_CHECK_PTR(wave.get(), "tran2long: wave");
+    DWGS_CHECK_PTR(Fl.get(), "tran2long: Fl");
+
+    // Verify delay buffer integrity
+    DWGS_ASSERT(d0.x != nullptr, "tran2long: d0.x is null");
+    DWGS_ASSERT(d1.x != nullptr, "tran2long: d1.x is null");
+    DWGS_ASSERT(d2.x != nullptr, "tran2long: d2.x is null");
+    DWGS_ASSERT(d3.x != nullptr, "tran2long: d3.x is null");
+    DWGS_ASSERT(d0.x == d0.x_ + 8, "tran2long: d0.x corrupted");
+    DWGS_ASSERT(d1.x == d1.x_ + 8, "tran2long: d1.x corrupted");
+    DWGS_ASSERT(d2.x == d2.x_ + 8, "tran2long: d2.x corrupted");
+    DWGS_ASSERT(d3.x == d3.x_ + 8, "tran2long: d3.x corrupted");
+
+    // Check delay parameters
+    DWGS_ASSERT(del0 >= 0 && del0 < DelaySize, "tran2long: del0 out of range");
+    DWGS_ASSERT(del2 >= 0 && del2 < DelaySize, "tran2long: del2 out of range");
+    DWGS_ASSERT(del4 >= 0 && del4 < DelaySize, "tran2long: del4 out of range");
+    DWGS_ASSERT(delTab >= 0 && delTab < DelaySize, "tran2long: delTab out of range");
+
     float *x = d2.x;
     int cur = (d2.cursor + DelaySize - delay + del4) % DelaySize;
+    DWGS_ASSERT(cur >= 0 && cur < DelaySize, "tran2long: d2 cur out of range");
 
     int n = del2 + del4;
     if(n <= cur) {

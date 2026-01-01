@@ -2,13 +2,11 @@
 #define FILTER_H
 
 #include "utils.h"
-#include <string.h>
+#include <cstring>
 #include <iostream>
-#include <math.h>
+#include <cmath>
 
-enum {
-    MaxFilterUpsample = 8
-};
+inline constexpr int MaxFilterUpsample = 8;
 
 
 class Filter {
@@ -118,6 +116,12 @@ public:
         clear();
     }
 
+    // Prevent copy/move - x pointer would become invalid
+    Delay(const Delay&) = delete;
+    Delay& operator=(const Delay&) = delete;
+    Delay(Delay&&) = delete;
+    Delay& operator=(Delay&&) = delete;
+
     void setDelay (int di_)
     {
         di = di_;
@@ -218,9 +222,7 @@ public:
     float f11,f12,f21,f22;
 };
 
-enum {
-    ResampleFilterSize = 64
-};
+inline constexpr int ResampleFilterSize = 64;
 
 class ResampleFIR {
 public:

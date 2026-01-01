@@ -5,16 +5,18 @@
 #include "filter.h"
 #include "FFTConvolver.h"
 #include "TwoStageFFTConvolver.h"
-using namespace fftconvolver;
 
 #include <algorithm>
-using namespace std;
+#include <array>
+#include <memory>
 
-enum { revSize = 65536 };
+using namespace fftconvolver;
+
+inline constexpr int revSize = 65536;
 
 template<int size>
 class ConvolveReverb {
-    
+
     enum {
         delaySize = 2*size,
         resSize = size,
@@ -32,7 +34,7 @@ public:
     
     
     ConvolveReverb(int blockSize) : k(0) {
-        headBlockSize = min(blockSize, (int)tailBlockSize);
+        headBlockSize = std::min(blockSize, static_cast<int>(tailBlockSize));
         //fftConvolver.init(headBlockSize, tailBlockSize, res, size);
         fftConvolver.init(headBlockSize, res, size);
     } 
@@ -45,10 +47,8 @@ public:
 };
 
 
-enum {
-    ReverbTaps = 12,
-    NumLengths = 23
-};
+inline constexpr int ReverbTaps = 12;
+inline constexpr int NumLengths = 23;
 
 
 class Reverb {
@@ -74,8 +74,8 @@ protected:
     
     float scale;
     
-    Loss decay[ReverbTaps];
-    ConvolveReverb<revSize> *conv;
+    std::array<Loss, ReverbTaps> decay;
+    std::unique_ptr<ConvolveReverb<revSize>> conv;
     float out;
 };
 
