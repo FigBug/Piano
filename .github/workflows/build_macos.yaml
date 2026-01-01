@@ -1,24 +1,81 @@
 name: Build macOS
-on: [push]
+on:
+  push:
+    branches:
+      - master
+      - 'feature/*'
+    tags:
+      - 'v*'
 jobs:
   build:
     name: Build macOS
     runs-on: macos-latest
     steps:
       - name: Fix up git URLs
-        run: echo -e '[url "https://github.com/"]\n  insteadOf = "git@github.com:"' >> ~/.gitconfig
+        run: |
+          echo -e '[url "https://github.com/"]\n  insteadOf = "git@github.com:"' >> ~/.gitconfig
         shell: bash
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v4
         with:
-          token: ${{ secrets.ACCESS_TOKEN }}
           submodules: true
       - uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: latest-stable             
-      - name: "Run script"
+          xcode-version: latest-stable
+      - name: Build plugin
         run: |
-          export OS="mac"
-          ./ci/build.sh
+          # Create a temp keychain
+          echo "Create a keychain"
+          security create-keychain -p nr4aGPyz Keys.keychain
+
+          echo $APPLICATION | base64 -D -o /tmp/Application.p12
+          echo $INSTALLER | base64 -D -o /tmp/Installer.p12
+
+          security import /tmp/Application.p12 -t agg -k Keys.keychain -P aym9PKWB -A -T /usr/bin/codesign
+          security import /tmp/Installer.p12 -t agg -k Keys.keychain -P aym9PKWB -A -T /usr/bin/codesign
+
+          security list-keychains -s Keys.keychain
+          security default-keychain -s Keys.keychain
+          security unlock-keychain -p nr4aGPyz Keys.keychain
+          security set-keychain-settings -l -u -t 13600 Keys.keychain
+          security set-key-partition-list -S apple-tool:,apple: -s -k nr4aGPyz Keys.keychain
+
+          DEV_APP_ID="Developer ID Application: Roland Rabien (3FS7DJDG38)"
+
+          # Build
+          cmake -B build -G Xcode
+          cmake --build build --config Release
+
+          # Package
+          mkdir -p ci/bin
+          cd ci/bin
+          mkdir -p au vst vst3
+
+          cp -R "../../build/Piano_artefacts/Release/AU/Piano.component" au/
+          cp -R "../../build/Piano_artefacts/Release/VST/Piano.vst" vst/
+          cp -R "../../build/Piano_artefacts/Release/VST3/Piano.vst3" vst3/
+
+          # Code sign
+          codesign -s "$DEV_APP_ID" -v "vst/Piano.vst" --options=runtime --timestamp --force
+          codesign -s "$DEV_APP_ID" -v "vst3/Piano.vst3" --options=runtime --timestamp --force
+          codesign -s "$DEV_APP_ID" -v "au/Piano.component" --options=runtime --timestamp --force
+
+          # Notarize
+          zip -r Piano_Mac.zip vst/Piano.vst vst3/Piano.vst3 au/Piano.component
+
+          if [[ -n "$APPLE_USER" ]]; then
+            xcrun notarytool submit --verbose --apple-id "$APPLE_USER" --password "$APPLE_PASS" --team-id "3FS7DJDG38" --wait --timeout 30m Piano_Mac.zip
+
+            rm Piano_Mac.zip
+            xcrun stapler staple vst/Piano.vst
+            xcrun stapler staple vst3/Piano.vst3
+            xcrun stapler staple au/Piano.component
+            zip -r Piano_Mac.zip vst/Piano.vst vst3/Piano.vst3 au/Piano.component
+          fi
+
+          # Upload to socalabs on release tag
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            curl -F "files=@Piano_Mac.zip" "https://socalabs.com/files/set.php?key=$APIKEY"
+          fi
         shell: bash
         env:
           APPLICATION: ${{ secrets.APPLICATION }}
@@ -26,3 +83,14 @@ jobs:
           APPLE_PASS: ${{ secrets.APPLE_PASS }}
           APPLE_USER: ${{ secrets.APPLE_USER }}
           APIKEY: ${{ secrets.APIKEY }}
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Piano_macOS
+          path: ci/bin/*.zip
+          retention-days: 30
+      - name: Upload to GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v1
+        with:
+          files: ci/bin/*.zip

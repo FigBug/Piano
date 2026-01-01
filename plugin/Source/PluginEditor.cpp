@@ -1,5 +1,6 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
+#include <memory>
 
 class PianoHorizontalFader : public gin::HorizontalFader
 {
@@ -35,10 +36,10 @@ PianoAudioProcessorEditor::PianoAudioProcessorEditor (PianoAudioProcessor& p_)
 
     for (auto pp : proc.getPluginParameters())
     {
-        auto pc = new PianoHorizontalFader (pp, false);
+        auto pc = std::make_unique<PianoHorizontalFader> (pp, false);
 
-        addAndMakeVisible (pc);
-        controls.add (pc);
+        addAndMakeVisible (pc.get());
+        controls.add (pc.release());
     }
 
     setGridSize (19, 4);

@@ -27,7 +27,7 @@ public:
 
     juce::MidiKeyboardState keyState;
 
-    Piano piano;
+    std::unique_ptr<Piano> piano;
 
     juce::Array<const gin::Parameter*> params;
 	

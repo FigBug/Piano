@@ -4,7 +4,8 @@ cmake_minimum_required (VERSION 3.24.0 FATAL_ERROR)
 # Set for each plugin
 #
 set (PLUGIN_NAME Piano)
-set (PLUGIN_VERSION 1.0.1)
+file(READ "${CMAKE_CURRENT_SOURCE_DIR}/VERSION" PLUGIN_VERSION)
+string(STRIP "${PLUGIN_VERSION}" PLUGIN_VERSION)
 set (BUNDLE_ID com.socalabs.Piano)
 set (AU_ID PianoAU)
 set (LV2_URI https://socalabs.com/piano/)
@@ -77,7 +78,7 @@ set_property (DIRECTORY "${CMAKE_CURRENT_LIST_DIR}/modules/juce" APPEND PROPERTY
 
 # Gin modules
 
-foreach(module_name IN ITEMS gin gin_dsp gin_simd gin_graphics gin_gui gin_metadata gin_network gin_plugin gin_webp)
+foreach(module_name IN ITEMS gin gin_dsp gin_simd gin_graphics gin_gui gin_metadata gin_network gin_plugin gin_standaloneplugin gin_webp)
 	juce_add_module (
 		"${CMAKE_CURRENT_LIST_DIR}/modules/gin/modules/${module_name}"
 		)
@@ -124,6 +125,7 @@ target_link_libraries (${PLUGIN_NAME} PRIVATE
 						gin_graphics
 						gin_gui
 						gin_plugin
+						gin_standaloneplugin
 
 						juce::juce_audio_basics
 						juce::juce_audio_devices
@@ -149,9 +151,8 @@ target_include_directories (${PLUGIN_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/S
 juce_generate_juce_header (${PLUGIN_NAME})
 
 target_compile_definitions (${PLUGIN_NAME} PRIVATE
-								JUCE_DISPLAY_SPLASH_SCREEN=0
+								JUCE_USE_CUSTOM_PLUGIN_STANDALONE_APP=1
 								JUCE_COREGRAPHICS_DRAW_ASYNC=1
-								JUCE_MODAL_LOOPS_PERMITTED=1
 								JUCE_WEB_BROWSER=0
 								JUCE_USE_FLAC=0
 								JUCE_USE_CURL=1
@@ -175,6 +176,9 @@ if (APPLE)
 				XCODE_ATTRIBUTE_CLANG_LINK_OBJC_RUNTIME NO
 				#XCODE_ATTRIBUTE_DEPLOYMENT_POSTPROCESSING[variant=Release] YES
 				XCODE_ATTRIBUTE_ONLY_ACTIVE_ARCH[variant=Debug] "YES"
+				# Enable debug symbols for Release builds
+				XCODE_ATTRIBUTE_DEBUG_INFORMATION_FORMAT[variant=Release] "dwarf-with-dsym"
+				XCODE_ATTRIBUTE_GCC_GENERATE_DEBUGGING_SYMBOLS[variant=Release] "YES"
 				)
 			if (NOT t STREQUAL "All")
 				target_compile_options(${tgt} PRIVATE
@@ -182,7 +186,8 @@ if (APPLE)
 					-Wunreachable-code -Winconsistent-missing-destructor-override -Wshift-sign-overflow -Wnullable-to-nonnull-conversion -Wuninitialized -Wno-missing-field-initializers
 					-Wno-ignored-qualifiers -Wno-missing-braces -Wno-char-subscripts -Wno-unused-private-field -fno-aligned-allocation -Wunused-private-field -Wunreachable-code
 					-Wenum-compare -Wshadow -Wfloat-conversion -Wshadow-uncaptured-local -Wshadow-field -Wsign-compare -Wdeprecated-this-capture -Wimplicit-float-conversion
-					-ffast-math -fno-finite-math-only)
+					-ffast-math -fno-finite-math-only
+					-g)
 			endif()
        	endif()
     endforeach()
@@ -195,8 +200,14 @@ if (WIN32)
             set(tgt ${tgt}_${t})
         endif()
         if (TARGET ${tgt})
-			set_property(TARGET ${tgt} APPEND_STRING PROPERTY LINK_FLAGS_DEBUG " /INCREMENTAL:NO")
-			set_target_properties(${tgt} PROPERTIES LINK_FLAGS "/ignore:4099")
+			get_target_property(tgt_type ${tgt} TYPE)
+			# Enable debug symbols for Release builds (only for compilable targets)
+			if (tgt_type STREQUAL "EXECUTABLE" OR tgt_type STREQUAL "SHARED_LIBRARY" OR tgt_type STREQUAL "STATIC_LIBRARY" OR tgt_type STREQUAL "MODULE_LIBRARY")
+				set_property(TARGET ${tgt} APPEND_STRING PROPERTY LINK_FLAGS_DEBUG " /INCREMENTAL:NO")
+				set_target_properties(${tgt} PROPERTIES LINK_FLAGS "/ignore:4099")
+				target_compile_options(${tgt} PRIVATE $<$<CONFIG:Release>:/Zi>)
+				set_property(TARGET ${tgt} APPEND_STRING PROPERTY LINK_FLAGS_RELEASE " /DEBUG /OPT:REF /OPT:ICF")
+			endif()
 		endif()
 	endforeach()
 endif()
@@ -213,3 +224,10 @@ else()
 endif()
 
 install (TARGETS ${PLUGIN_NAME} DESTINATION "${dest}")
+
+# Tests
+option(BUILD_TESTS "Build Piano tests" OFF)
+if(BUILD_TESTS)
+    enable_testing()
+    add_subdirectory(tests)
+endif()

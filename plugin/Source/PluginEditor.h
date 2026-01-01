@@ -15,8 +15,6 @@ public:
     void resized() override;
 
 private:
-    gin::Layout layout {*this};
-
     PianoAudioProcessor& proc;
 
     juce::MidiKeyboardComponent keyboard { proc.keyState, juce::MidiKeyboardComponent::horizontalKeyboard };

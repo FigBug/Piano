@@ -34,3 +34,7 @@
 JuceLibraryCode
 Builds
 ci/bin
+.DS_Store
+build-test
+.claude
+build

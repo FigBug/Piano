@@ -10,9 +10,20 @@ enum {
 Hammer::Hammer()
 {
     x = 0;
+    v = 0;
     a = 0.0;
     F = 0.0;
     upprev = 0;
+    bEscaped = false;
+    escapeDelay = 0;
+    escapeCount = 0;
+    dt = 0;
+    dti = 0;
+    mi = 0;
+    K = 0;
+    p = 0;
+    alpha = 0;
+    Z2i = 0;
 }
 
 void Hammer::set (float Fs_, float m_, float K_, float p_, float Z_, float alpha_, int escapeDelay_)

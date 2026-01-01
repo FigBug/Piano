@@ -1,21 +1,56 @@
 name: Build Windows
-on: [push]
+on:
+  push:
+    branches:
+      - master
+      - 'feature/*'
+    tags:
+      - 'v*'
 jobs:
   build:
     name: Build Windows
     runs-on: windows-latest
     steps:
       - name: Fix up git URLs
-        run: echo -e '[url "https://github.com/"]\n  insteadOf = "git@github.com:"' >> ~/.gitconfig
-        shell: bash
-      - uses: actions/checkout@v1
-        with:
-          token: ${{ secrets.ACCESS_TOKEN }}
-          submodules: true
-      - name: "Run script"
         run: |
-          export OS="win"
-          ./ci/build.sh
-        shell: bash
+          "[url `"https://github.com/`"]`n  insteadOf = `"git@github.com:`"" | Out-File -FilePath $env:USERPROFILE\.gitconfig -Append -Encoding UTF8
+        shell: pwsh
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - name: Build plugin
+        run: |
+          # Build
+          cmake -B build
+          cmake --build build --config Release
+
+          # Package
+          New-Item -ItemType Directory -Force -Path "ci/bin"
+          cd ci/bin
+          New-Item -ItemType Directory -Force -Path "vst"
+          New-Item -ItemType Directory -Force -Path "vst3"
+
+          Copy-Item "../../build/Piano_artefacts/Release/VST/Piano.dll" "vst/"
+          Copy-Item "../../build/Piano_artefacts/Release/VST3/Piano.vst3" "vst3/" -Recurse
+
+          # Create zip
+          7z a Piano_Win.zip vst/Piano.dll vst3/Piano.vst3
+
+          # Upload to socalabs on release tag
+          if ("${{github.ref}}" -like "refs/tags/v*") {
+            curl.exe -F "files=@Piano_Win.zip" "https://socalabs.com/files/set.php?key=$env:APIKEY"
+          }
+        shell: pwsh
         env:
           APIKEY: ${{ secrets.APIKEY }}
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Piano_Windows
+          path: ci/bin/*.zip
+          retention-days: 30
+      - name: Upload to GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v1
+        with:
+          files: ci/bin/*.zip

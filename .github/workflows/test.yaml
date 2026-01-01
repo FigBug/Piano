@@ -1,0 +1,84 @@
+name: Run Tests
+on:
+  push:
+    branches:
+      - '**'
+    tags-ignore:
+      - '**'
+  pull_request:
+
+jobs:
+  test:
+    name: Test (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        include:
+          - os: ubuntu-latest
+            cmake_generator: Ninja
+            cmake_extra: -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++
+          - os: macos-latest
+            cmake_generator: Ninja
+            cmake_extra: ""
+          - os: windows-latest
+            cmake_generator: Visual Studio 17 2022
+            cmake_extra: ""
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Fix up git URLs
+        run: echo -e '[url "https://github.com/"]\n  insteadOf = "git@github.com:"' >> ~/.gitconfig
+        shell: bash
+
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      # Linux dependencies
+      - name: Install dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang ninja-build ladspa-sdk freeglut3-dev g++ libasound2-dev libcurl4-openssl-dev libfreetype6-dev libjack-jackd2-dev libx11-dev libxcomposite-dev libxcursor-dev libxinerama-dev libxrandr-dev mesa-common-dev libwebkit2gtk-4.1-dev xvfb
+
+      # macOS dependencies
+      - name: Install dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: brew install ninja
+
+      # Enable ASAN on Linux/macOS, disable on Windows (MSVC ASAN requires runtime DLLs)
+      - name: Configure CMake (Linux/macOS)
+        if: runner.os != 'Windows'
+        run: |
+          cmake -B build -G "${{ matrix.cmake_generator }}" -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=ON -DENABLE_ASAN=ON ${{ matrix.cmake_extra }}
+
+      - name: Configure CMake (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          cmake -B build -G "${{ matrix.cmake_generator }}" -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=ON -DENABLE_ASAN=OFF ${{ matrix.cmake_extra }}
+
+      - name: Build tests
+        run: cmake --build build --target PianoTests --config Release
+
+      # Linux needs xvfb for GUI initialization
+      - name: Run tests (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          cd build
+          xvfb-run --auto-servernum ctest --output-on-failure -C Release
+
+      - name: Run tests (macOS/Windows)
+        if: runner.os != 'Linux'
+        run: |
+          cd build
+          ctest --output-on-failure -C Release
+
+      - name: Upload reference file artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reference-files-${{ matrix.os }}
+          path: tests/reference/*.wav
+          if-no-files-found: ignore

@@ -1,5 +1,39 @@
 #include "utils.h"
+#include <cstdio>
+#include <cstdlib>
+#include <cstdint>
 
+#ifdef _WIN32
+#define NOMINMAX
+#include <windows.h>
+#define DEBUG_OUTPUT(msg) do { OutputDebugStringA(msg); fprintf(stderr, "%s", msg); fflush(stderr); } while(0)
+#else
+#define DEBUG_OUTPUT(msg) do { fprintf(stderr, "%s", msg); fflush(stderr); } while(0)
+#endif
+
+// Assertion macro for utils - prints pointer values before aborting
+#define UTILS_ASSERT(cond, msg, ...) do { \
+    if (!(cond)) { \
+        char _buf[512]; \
+        snprintf(_buf, sizeof(_buf), "UTILS ASSERT FAILED: " msg "\n  File: %s, Line: %d\n  Condition: %s\n", \
+                ##__VA_ARGS__, __FILE__, __LINE__, #cond); \
+        DEBUG_OUTPUT(_buf); \
+        abort(); \
+    } \
+} while(0)
+
+// Check if pointer looks valid (not null, not small integer, not -1/high invalid)
+#define UTILS_CHECK_PTR(ptr, name) do { \
+    volatile uintptr_t p = (uintptr_t)(ptr); \
+    volatile bool bad = (p == 0 || p < 0x10000 || p > 0x00007FFFFFFFFFFF); \
+    if (bad) { \
+        char _buf[512]; \
+        snprintf(_buf, sizeof(_buf), "UTILS BAD PTR: %s = %p (0x%llx) - invalid pointer!\n  File: %s, Line: %d\n", \
+                name, (void*)(ptr), (unsigned long long)p, __FILE__, __LINE__); \
+        DEBUG_OUTPUT(_buf); \
+        __debugbreak(); \
+    } \
+} while(0)
 
 float dot(int N, float *A, float *B) {
     float dot = 0;
@@ -18,21 +52,19 @@ float sum8(simde__m256 x) {
     return sumAVX;
 }
 
-
 float sse_dot(int N, float* A, float* B) {
     vec8 temp0 = {0};
     vec8 temp1 = {0};
     vec8 temp2 = {0};
     vec8 temp3 = {0};
-    
-    vec8 *Av = (vec8 *)A;
-    vec8 *Bv = (vec8 *)B;
+
+    int Ai = 0;
+    int Bi = 0;
 
     vec8 Bv0;
     vec8 Bv1;
     vec8 Bv2;
     vec8 Bv3;
-
 
     int N32 = N / (4 * 8);
     N -= 4*8*N32;
@@ -40,41 +72,37 @@ float sse_dot(int N, float* A, float* B) {
     N -= 8*N8;
 
     for(int i = 0; i < N32; i++) {
+        Bv0 = simde_mm256_loadu_ps(B + Bi);
+        Bv1 = simde_mm256_loadu_ps(B + Bi + 8);
+        Bv2 = simde_mm256_loadu_ps(B + Bi + 16);
+        Bv3 = simde_mm256_loadu_ps(B + Bi + 24);
+        temp0 = simde_mm256_fmadd_ps(simde_mm256_loadu_ps(A + Ai), Bv0, temp0);
+        temp1 = simde_mm256_fmadd_ps(simde_mm256_loadu_ps(A + Ai + 8), Bv1, temp1);
+        temp2 = simde_mm256_fmadd_ps(simde_mm256_loadu_ps(A + Ai + 16), Bv2, temp2);
+        temp3 = simde_mm256_fmadd_ps(simde_mm256_loadu_ps(A + Ai + 24), Bv3, temp3);
 
-        Bv0 = *(Bv);
-        Bv1 = *(Bv+1);
-        Bv2 = *(Bv+2);
-        Bv3 = *(Bv+3);
-        temp0 = simde_mm256_fmadd_ps(*Av,Bv0,temp0);
-        temp1 = simde_mm256_fmadd_ps(*(Av+1),Bv1,temp1);
-        temp2 = simde_mm256_fmadd_ps(*(Av+2),Bv2,temp2);
-        temp3 = simde_mm256_fmadd_ps(*(Av+3),Bv3,temp3);
-
-        Av+=4;
-        Bv+=4;
+        Ai += 32;
+        Bi += 32;
     }
 
     for(int i = 0; i < N8; i++) {
-        temp0 = simde_mm256_fmadd_ps(*Av,*Bv,temp0);
-        Av++;
-        Bv++;
+        temp0 = simde_mm256_fmadd_ps(simde_mm256_loadu_ps(A + Ai), simde_mm256_loadu_ps(B + Bi), temp0);
+        Ai += 8;
+        Bi += 8;
     }
 
-    A = (float*)Av;
-    B = (float*)Bv;
-
-    float dot = 0;
-    for(int i=0; i<N; i++) {
-        dot += A[i] * B[i];
+    float dotval = 0;
+    for(int i = 0; i < N; i++) {
+        dotval += A[Ai + i] * B[Bi + i];
     }
-    
-    if (N32 || N8) 
+
+    if (N32 || N8)
     {
         temp0 = simde_mm256_add_ps (temp0, simde_mm256_add_ps (temp1, simde_mm256_add_ps (temp2, temp3)));
-        dot += sum8(temp0);
+        dotval += sum8(temp0);
     }
 
-    return dot;
+    return dotval;
 }
 
 float sum4 (vec4 x)
@@ -86,43 +114,41 @@ float sum4 (vec4 x)
 
 void ms4(float *x, float *y, float *z, int N)
 {
-    vec4 *x4 = (vec4*) x;
-    vec4 *z4 = (vec4*) z;
-
     int N4 = N >> 2;
-    vec4 *zend = z4 + N4 + 1;
-    vec4 v;
+    int iterations = N4 + 1;
 
+    int xi = 0;
+    int zi = 0;
     y += N - 4;
-    while (z4 < zend)
+
+    for (int i = 0; i < iterations; i++)
     {
         vec4 w = simde_mm_loadu_ps(y);
-        v = simde_mm_sub_ps (simde_mm_shuffle_ps (w, w, SIMDE_MM_SHUFFLE(0, 1, 2, 3)), *x4);
-        *z4 = simde_mm_mul_ps(v,v);
-        x4++;
+        vec4 xv = simde_mm_loadu_ps(x + xi);
+        vec4 v = simde_mm_sub_ps(simde_mm_shuffle_ps(w, w, SIMDE_MM_SHUFFLE(0, 1, 2, 3)), xv);
+        simde_mm_storeu_ps(z + zi, simde_mm_mul_ps(v, v));
+        xi += 4;
+        zi += 4;
         y -= 4;
-        z4++;
     }
 }
 
 // 0 0 0 x ...
 void diff4 (float *x, float *y, int N)
 {
-    vec4 v0;
-    vec4 v1;
-    vec4 *x4 = (vec4*) x;
-    vec4 *y4 = (vec4*) y;
-    v0 = *x4;
-    x4++;
-    y4++;
+    vec4 v0 = simde_mm_loadu_ps(x);
+    int xi = 4;
+    int yi = 4;
     int N4 = N >> 2;
-    vec4 *yend = y4 + N4 ;
-    while (y4 < yend)
+
+    for (int i = 1; i < N4; i++)
     {
-        *y4 = simde_mm_sub_ps (simde_mm_shuffle_ps (v0, *x4, SIMDE_MM_SHUFFLE (1,0,3,2)), v0);
-        v0 = *x4;
-        x4++;
-        y4++;
+        vec4 x4 = simde_mm_loadu_ps(x + xi);
+        vec4 result = simde_mm_sub_ps(simde_mm_shuffle_ps(v0, x4, SIMDE_MM_SHUFFLE(1, 0, 3, 2)), v0);
+        simde_mm_storeu_ps(y + yi, result);
+        v0 = x4;
+        xi += 4;
+        yi += 4;
     }
     y[3] = 2 * (x[1] - x[0]);
     y[N] = (x[N-2] - x[N-4]);
@@ -132,14 +158,10 @@ void diff4 (float *x, float *y, int N)
 
 std::ostream& operator<<(std::ostream& os, const vec4 &v)
 {
-    union {
-        vec4 tempv;
-        float tempf[4];
-    };
-    tempv = v;
+    alignas(16) float tempf[4];
+    simde_mm_store_ps(tempf, v);
     for(int i=0; i<4; i++) {
         os << tempf[i] << " ";
     }
     return os;
 }
-

@@ -22,6 +22,7 @@
 #include "AudioFFT.h"
 #include "Utilities.h"
 
+#include <memory>
 #include <vector>
 
 
@@ -82,8 +83,8 @@ private:
     size_t _segSize;
     size_t _segCount;
     size_t _fftComplexSize;
-    std::vector<SplitComplex*> _segments;
-    std::vector<SplitComplex*> _segmentsIR;
+    std::vector<std::unique_ptr<SplitComplex>> _segments;
+    std::vector<std::unique_ptr<SplitComplex>> _segmentsIR;
     SampleBuffer _fftBuffer;
     audiofft::AudioFFT _fft;
     SplitComplex _preMultiplied;
