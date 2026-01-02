@@ -4,6 +4,7 @@
 [![Build Windows](https://github.com/FigBug/Piano/actions/workflows/build_windows.yaml/badge.svg)](https://github.com/FigBug/Piano/actions/workflows/build_windows.yaml)
 [![Build Linux](https://github.com/FigBug/Piano/actions/workflows/build_linux.yaml/badge.svg)](https://github.com/FigBug/Piano/actions/workflows/build_linux.yaml)
 [![Tests](https://github.com/FigBug/Piano/actions/workflows/test.yaml/badge.svg)](https://github.com/FigBug/Piano/actions/workflows/test.yaml)
+[![Performance](https://github.com/FigBug/Piano/actions/workflows/performance.yaml/badge.svg)](https://figbug.github.io/Piano/dev/bench/)
 
 A physically modeled piano synthesizer plugin using digital waveguide synthesis.
 
