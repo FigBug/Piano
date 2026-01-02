@@ -27,6 +27,11 @@ jobs:
           cmake -B build -G Ninja -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++
           cmake --build build --config Release
 
+          # Strip debug symbols
+          strip build/Piano_artefacts/VST/libPiano.so
+          strip build/Piano_artefacts/VST3/Piano.vst3/Contents/x86_64-linux/Piano.so
+          strip build/Piano_artefacts/LV2/Piano.lv2/Piano.so
+
           # Package
           mkdir -p ci/bin
           cd ci/bin
