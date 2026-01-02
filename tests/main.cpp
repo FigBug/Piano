@@ -4,9 +4,13 @@
 #include "hammer.h"
 #include "dwgs.h"
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <csignal>
 #include <cstdlib>
+#include <cstring>
+#include <fstream>
+#include <iomanip>
 #include <iostream>
 #include <memory>
 #include <vector>
@@ -2030,8 +2034,176 @@ private:
     }
 };
 
+// Benchmark configuration
+constexpr float BENCHMARK_SAMPLE_RATE = 44100.0f;
+constexpr int BENCHMARK_BLOCK_SIZE = 512;
+constexpr float BENCHMARK_DURATION_SECONDS = 30.0f;  // 30 seconds of audio
+constexpr int BENCHMARK_ITERATIONS = 3;  // Run multiple times for consistency
+
+struct BenchmarkResult {
+    std::string name;
+    double audioSeconds;
+    double clockSeconds;
+    double realtimeRatio;  // audioSeconds / clockSeconds (higher = faster)
+};
+
+BenchmarkResult runSingleBenchmark(const std::string& name, int numVoices)
+{
+    Piano piano;
+    piano.init(BENCHMARK_SAMPLE_RATE, BENCHMARK_BLOCK_SIZE);
+
+    // Set default parameters
+    for (int i = 0; i < NumParams; i++)
+        piano.setParameter(i, 0.5f);
+    piano.setParameter(pVolume, 0.7f);
+
+    int totalSamples = static_cast<int>(BENCHMARK_DURATION_SECONDS * BENCHMARK_SAMPLE_RATE);
+    int numBlocks = (totalSamples + BENCHMARK_BLOCK_SIZE - 1) / BENCHMARK_BLOCK_SIZE;
+
+    // Allocate output buffer (stereo)
+    juce::AudioBuffer<float> outputBuffer(2, BENCHMARK_BLOCK_SIZE);
+
+    // Trigger notes to simulate realistic usage
+    juce::MidiBuffer midiBuffer;
+    for (int v = 0; v < numVoices; v++)
+    {
+        midiBuffer.addEvent(juce::MidiMessage::noteOn(1, 60 + v * 2, 0.8f), 0);
+    }
+
+    // Warm up
+    float* channels[2] = { outputBuffer.getWritePointer(0), outputBuffer.getWritePointer(1) };
+    piano.process(channels, BENCHMARK_BLOCK_SIZE, midiBuffer);
+
+    // Clear MIDI for subsequent blocks
+    midiBuffer.clear();
+
+    // Benchmark
+    auto startTime = std::chrono::high_resolution_clock::now();
+
+    for (int block = 1; block < numBlocks; block++)
+    {
+        piano.process(channels, BENCHMARK_BLOCK_SIZE, midiBuffer);
+    }
+
+    auto endTime = std::chrono::high_resolution_clock::now();
+    double clockSeconds = std::chrono::duration<double>(endTime - startTime).count();
+    double audioSeconds = BENCHMARK_DURATION_SECONDS;
+
+    return { name, audioSeconds, clockSeconds, audioSeconds / clockSeconds };
+}
+
+int runBenchmarks(const std::string& outputPath)
+{
+    std::cout << "========================================" << std::endl;
+    std::cout << "Piano Performance Benchmark" << std::endl;
+    std::cout << "========================================" << std::endl;
+    std::cout << "Sample rate: " << BENCHMARK_SAMPLE_RATE << " Hz" << std::endl;
+    std::cout << "Block size: " << BENCHMARK_BLOCK_SIZE << " samples" << std::endl;
+    std::cout << "Duration: " << BENCHMARK_DURATION_SECONDS << " seconds" << std::endl;
+    std::cout << "Iterations: " << BENCHMARK_ITERATIONS << std::endl;
+    std::cout << std::endl;
+
+    // Initialize JUCE
+    juce::ScopedJuceInitialiser_GUI juceInit;
+
+    std::vector<BenchmarkResult> results;
+
+    // Test configurations: different polyphony levels
+    const int voiceCounts[] = { 1, 4, 8, 16 };
+
+    for (int voices : voiceCounts)
+    {
+        std::string testName = std::to_string(voices) + " voice" + (voices > 1 ? "s" : "");
+        std::cout << "Benchmarking " << testName << "..." << std::endl;
+
+        double totalClockSeconds = 0;
+        double totalAudioSeconds = 0;
+
+        for (int iter = 0; iter < BENCHMARK_ITERATIONS; iter++)
+        {
+            auto result = runSingleBenchmark(testName, voices);
+            totalClockSeconds += result.clockSeconds;
+            totalAudioSeconds += result.audioSeconds;
+        }
+
+        double avgClockSeconds = totalClockSeconds / BENCHMARK_ITERATIONS;
+        double avgAudioSeconds = totalAudioSeconds / BENCHMARK_ITERATIONS;
+        double realtimeRatio = avgAudioSeconds / avgClockSeconds;
+
+        results.push_back({ testName, avgAudioSeconds, avgClockSeconds, realtimeRatio });
+
+        std::cout << "  Clock time: " << std::fixed << std::setprecision(3) << avgClockSeconds << "s" << std::endl;
+        std::cout << "  Audio time: " << avgAudioSeconds << "s" << std::endl;
+        std::cout << "  Realtime ratio: " << std::setprecision(2) << realtimeRatio << "x" << std::endl;
+        std::cout << std::endl;
+    }
+
+    // Print summary
+    std::cout << "========================================" << std::endl;
+    std::cout << "BENCHMARK SUMMARY" << std::endl;
+    std::cout << "========================================" << std::endl;
+    std::cout << std::left << std::setw(12) << "Test"
+              << std::right << std::setw(12) << "Clock(s)"
+              << std::setw(12) << "Audio(s)"
+              << std::setw(12) << "Ratio" << std::endl;
+    std::cout << "----------------------------------------" << std::endl;
+
+    for (const auto& r : results)
+    {
+        std::cout << std::left << std::setw(12) << r.name
+                  << std::right << std::fixed << std::setprecision(3)
+                  << std::setw(12) << r.clockSeconds
+                  << std::setw(12) << r.audioSeconds
+                  << std::setprecision(2) << std::setw(11) << r.realtimeRatio << "x" << std::endl;
+    }
+    std::cout << "========================================" << std::endl;
+
+    // Output JSON for github-action-benchmark
+    if (!outputPath.empty())
+    {
+        std::ofstream jsonFile(outputPath);
+        if (jsonFile.is_open())
+        {
+            jsonFile << "[\n";
+            for (size_t i = 0; i < results.size(); i++)
+            {
+                const auto& r = results[i];
+                jsonFile << "  {\n";
+                jsonFile << "    \"name\": \"" << r.name << "\",\n";
+                jsonFile << "    \"unit\": \"x realtime\",\n";
+                jsonFile << "    \"value\": " << std::fixed << std::setprecision(4) << r.realtimeRatio << "\n";
+                jsonFile << "  }" << (i < results.size() - 1 ? "," : "") << "\n";
+            }
+            jsonFile << "]\n";
+            jsonFile.close();
+            std::cout << "\nResults written to: " << outputPath << std::endl;
+        }
+        else
+        {
+            std::cerr << "Failed to write results to: " << outputPath << std::endl;
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
 int main(int argc, char* argv[])
 {
+    // Check for benchmark mode
+    for (int i = 1; i < argc; i++)
+    {
+        if (std::strcmp(argv[i], "--benchmark") == 0)
+        {
+            std::string outputPath;
+            if (i + 1 < argc && argv[i + 1][0] != '-')
+            {
+                outputPath = argv[i + 1];
+            }
+            return runBenchmarks(outputPath);
+        }
+    }
+
     // Install signal handlers for crash detection
     installSignalHandlers();
 

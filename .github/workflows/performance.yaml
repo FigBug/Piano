@@ -1,0 +1,119 @@
+name: Performance Benchmark
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+  workflow_dispatch:
+
+# Grant permissions for GitHub Pages deployment
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  benchmark:
+    name: Benchmark (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        include:
+          - os: ubuntu-latest
+            cmake_generator: Ninja
+            cmake_extra: -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++
+            executable: build/PianoTests_artefacts/Release/PianoTests
+            runner_prefix: xvfb-run --auto-servernum
+          - os: macos-latest
+            cmake_generator: Ninja
+            cmake_extra: ""
+            executable: build/PianoTests_artefacts/Release/PianoTests
+            runner_prefix: ""
+          - os: windows-latest
+            cmake_generator: Visual Studio 17 2022
+            cmake_extra: ""
+            executable: build/PianoTests_artefacts/Release/PianoTests.exe
+            runner_prefix: ""
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Fix up git URLs
+        run: echo -e '[url "https://github.com/"]\n  insteadOf = "git@github.com:"' >> ~/.gitconfig
+        shell: bash
+
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      # Linux dependencies
+      - name: Install dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang ninja-build ladspa-sdk freeglut3-dev g++ libasound2-dev libcurl4-openssl-dev libfreetype6-dev libjack-jackd2-dev libx11-dev libxcomposite-dev libxcursor-dev libxinerama-dev libxrandr-dev mesa-common-dev libwebkit2gtk-4.1-dev xvfb
+
+      # macOS dependencies
+      - name: Install dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: brew install ninja
+
+      # Configure and build - Release mode, no ASAN
+      - name: Configure CMake
+        run: |
+          cmake -B build -G "${{ matrix.cmake_generator }}" -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=ON -DENABLE_ASAN=OFF ${{ matrix.cmake_extra }}
+
+      - name: Build tests
+        run: cmake --build build --target PianoTests --config Release
+
+      # Run benchmarks
+      - name: Run benchmarks (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          ${{ matrix.runner_prefix }} ${{ matrix.executable }} --benchmark benchmark_results.json
+
+      - name: Run benchmarks (macOS/Windows)
+        if: runner.os != 'Linux'
+        run: |
+          ${{ matrix.executable }} --benchmark benchmark_results.json
+
+      # Upload benchmark results as artifact
+      - name: Upload benchmark results
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-results-${{ matrix.os }}
+          path: benchmark_results.json
+
+      # Store benchmark results (only on master branch push)
+      - name: Store benchmark result
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          name: Piano Performance (${{ runner.os }})
+          tool: 'customBiggerIsBetter'
+          output-file-path: benchmark_results.json
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: true
+          alert-threshold: '80%'
+          comment-on-alert: true
+          fail-on-alert: false
+          # Store results in gh-pages branch
+          gh-pages-branch: gh-pages
+          benchmark-data-dir-path: dev/bench
+
+      # Comment on PR with benchmark comparison
+      - name: Compare benchmarks (PR only)
+        if: github.event_name == 'pull_request'
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          name: Piano Performance (${{ runner.os }})
+          tool: 'customBiggerIsBetter'
+          output-file-path: benchmark_results.json
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: false
+          comment-on-alert: true
+          alert-threshold: '80%'
+          fail-on-alert: false
+          gh-pages-branch: gh-pages
+          benchmark-data-dir-path: dev/bench
