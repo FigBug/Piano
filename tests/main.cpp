@@ -2062,25 +2062,24 @@ BenchmarkResult runSingleBenchmark(const std::string& name, int numVoices)
 
     // Allocate output buffer (stereo)
     juce::AudioBuffer<float> outputBuffer(2, BENCHMARK_BLOCK_SIZE);
+    float* channels[2] = { outputBuffer.getWritePointer(0), outputBuffer.getWritePointer(1) };
 
-    // Trigger notes to simulate realistic usage
+    // Trigger notes one at a time with blocks in between (more realistic)
     juce::MidiBuffer midiBuffer;
     for (int v = 0; v < numVoices; v++)
     {
-        midiBuffer.addEvent(juce::MidiMessage::noteOn(1, 60 + v * 2, 0.8f), 0);
+        midiBuffer.clear();
+        midiBuffer.addEvent(juce::MidiMessage::noteOn(1, 48 + v * 4, 0.8f), 0);
+        piano.process(channels, BENCHMARK_BLOCK_SIZE, midiBuffer);
     }
 
-    // Warm up
-    float* channels[2] = { outputBuffer.getWritePointer(0), outputBuffer.getWritePointer(1) };
-    piano.process(channels, BENCHMARK_BLOCK_SIZE, midiBuffer);
-
-    // Clear MIDI for subsequent blocks
+    // Clear MIDI for benchmark blocks
     midiBuffer.clear();
 
     // Benchmark
     auto startTime = std::chrono::high_resolution_clock::now();
 
-    for (int block = 1; block < numBlocks; block++)
+    for (int block = 0; block < numBlocks; block++)
     {
         piano.process(channels, BENCHMARK_BLOCK_SIZE, midiBuffer);
     }
