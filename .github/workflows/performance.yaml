@@ -23,18 +23,12 @@ jobs:
           - os: ubuntu-latest
             cmake_generator: Ninja
             cmake_extra: -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++
-            executable: build/PianoTests_artefacts/Release/PianoTests
-            runner_prefix: xvfb-run --auto-servernum
           - os: macos-latest
             cmake_generator: Ninja
             cmake_extra: ""
-            executable: build/PianoTests_artefacts/Release/PianoTests
-            runner_prefix: ""
           - os: windows-latest
             cmake_generator: Visual Studio 17 2022
             cmake_extra: ""
-            executable: build/PianoTests_artefacts/Release/PianoTests.exe
-            runner_prefix: ""
 
     runs-on: ${{ matrix.os }}
 
@@ -71,12 +65,24 @@ jobs:
       - name: Run benchmarks (Linux)
         if: runner.os == 'Linux'
         run: |
-          ${{ matrix.runner_prefix }} ${{ matrix.executable }} --benchmark benchmark_results.json
+          EXECUTABLE=$(find build -name "PianoTests" -type f -executable | head -1)
+          echo "Found executable: $EXECUTABLE"
+          xvfb-run --auto-servernum "$EXECUTABLE" --benchmark benchmark_results.json
 
-      - name: Run benchmarks (macOS/Windows)
-        if: runner.os != 'Linux'
+      - name: Run benchmarks (macOS)
+        if: runner.os == 'macOS'
         run: |
-          ${{ matrix.executable }} --benchmark benchmark_results.json
+          EXECUTABLE=$(find build -name "PianoTests" -type f -perm +111 | head -1)
+          echo "Found executable: $EXECUTABLE"
+          "$EXECUTABLE" --benchmark benchmark_results.json
+
+      - name: Run benchmarks (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $EXECUTABLE = Get-ChildItem -Path build -Recurse -Filter "PianoTests.exe" | Select-Object -First 1 -ExpandProperty FullName
+          Write-Host "Found executable: $EXECUTABLE"
+          & $EXECUTABLE --benchmark benchmark_results.json
 
       # Upload benchmark results as artifact
       - name: Upload benchmark results
