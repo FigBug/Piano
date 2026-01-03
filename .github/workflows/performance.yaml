@@ -31,6 +31,7 @@ jobs:
             cmake_extra: ""
 
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
 
     steps:
       - name: Fix up git URLs
@@ -101,7 +102,7 @@ jobs:
           output-file-path: benchmark_results.json
           github-token: ${{ secrets.GITHUB_TOKEN }}
           auto-push: true
-          alert-threshold: '80%'
+          alert-threshold: '50%'
           comment-on-alert: true
           fail-on-alert: false
           # Store results in gh-pages branch
@@ -119,7 +120,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           auto-push: false
           comment-on-alert: true
-          alert-threshold: '80%'
+          alert-threshold: '50%'
           fail-on-alert: false
           gh-pages-branch: gh-pages
           benchmark-data-dir-path: dev/bench
