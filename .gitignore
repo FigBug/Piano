@@ -38,3 +38,4 @@ ci/bin
 build-test
 .claude
 build
+benchmark_results.json
