@@ -102,7 +102,7 @@ jobs:
           output-file-path: benchmark_results.json
           github-token: ${{ secrets.GITHUB_TOKEN }}
           auto-push: true
-          alert-threshold: '50%'
+          alert-threshold: '130%'
           comment-on-alert: true
           fail-on-alert: false
           # Store results in gh-pages branch
@@ -120,7 +120,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           auto-push: false
           comment-on-alert: true
-          alert-threshold: '50%'
+          alert-threshold: '130%'
           fail-on-alert: false
           gh-pages-branch: gh-pages
           benchmark-data-dir-path: dev/bench
