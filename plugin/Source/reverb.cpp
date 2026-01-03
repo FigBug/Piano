@@ -23,6 +23,10 @@ Reverb::Reverb (float Fs_)
         c[k] = k < ReverbTaps ? ((k % 2 == 0) ? 0.5f / ReverbTaps : -0.5f / ReverbTaps) : 0.0f;
     }
     out = 0.0;
+
+    // Initialize decay filters with default values to avoid undefined behavior
+    // if reverb() is called before set()
+    set(0.5f, 20.0f, 20.0f);
 }
 
 void Reverb::set (float size, float c1, float c3)

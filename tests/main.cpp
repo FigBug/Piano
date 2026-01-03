@@ -2102,7 +2102,8 @@ int runBenchmarks(const std::string& outputPath)
     std::cout << "Iterations: " << BENCHMARK_ITERATIONS << std::endl;
     std::cout << std::endl;
 
-    // Initialize JUCE
+    // Initialize JUCE - needed for MidiBuffer and other JUCE types
+    // On headless CI, this should still work as we're not creating windows
     juce::ScopedJuceInitialiser_GUI juceInit;
 
     std::vector<BenchmarkResult> results;

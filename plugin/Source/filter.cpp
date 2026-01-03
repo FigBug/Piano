@@ -102,6 +102,7 @@ Filter::~Filter()
 Filter::Filter(int nmax_)
 {
     nmax = nmax_;
+    n = 0;  // Initialize n to avoid undefined behavior if filter() is called before create()
     int n4 = nmax / 4;
     posix_memalign((void**)&b,32,size_t(n4+3)*sizeof(vec4));
     posix_memalign((void**)&a,32,size_t(n4+3)*sizeof(vec4));
