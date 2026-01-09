@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1767929281255,
+  "lastUpdate": 1767929799705,
   "repoUrl": "https://github.com/FigBug/Piano",
   "entries": {
     "Piano Performance (Windows)": [
@@ -573,6 +573,50 @@ window.BENCHMARK_DATA = {
           {
             "name": "16 voices",
             "value": 25.4878,
+            "unit": "x realtime"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "figbug@gmail.com",
+            "name": "Roland Rabien",
+            "username": "FigBug"
+          },
+          "committer": {
+            "email": "figbug@gmail.com",
+            "name": "Roland Rabien",
+            "username": "FigBug"
+          },
+          "distinct": true,
+          "id": "b08be14752eb5dc5fba7a6e87622982abda35b44",
+          "message": "Disable JUCE_COPY_PLUGIN_AFTER_BUILD to fix CI hangs",
+          "timestamp": "2026-01-08T19:16:02-08:00",
+          "tree_id": "a8fbc2c687a584e291bcd547e8059616225f7239",
+          "url": "https://github.com/FigBug/Piano/commit/b08be14752eb5dc5fba7a6e87622982abda35b44"
+        },
+        "date": 1767929797908,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "1 voice",
+            "value": 144.3522,
+            "unit": "x realtime"
+          },
+          {
+            "name": "4 voices",
+            "value": 52.8498,
+            "unit": "x realtime"
+          },
+          {
+            "name": "8 voices",
+            "value": 41.1499,
+            "unit": "x realtime"
+          },
+          {
+            "name": "16 voices",
+            "value": 27.9926,
             "unit": "x realtime"
           }
         ]
