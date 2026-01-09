@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1767928295001,
+  "lastUpdate": 1767928296903,
   "repoUrl": "https://github.com/FigBug/Piano",
   "entries": {
     "Piano Performance (Windows)": [
@@ -619,6 +619,50 @@ window.BENCHMARK_DATA = {
           {
             "name": "16 voices",
             "value": 21.8764,
+            "unit": "x realtime"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "figbug@gmail.com",
+            "name": "Roland Rabien",
+            "username": "FigBug"
+          },
+          "committer": {
+            "email": "figbug@gmail.com",
+            "name": "Roland Rabien",
+            "username": "FigBug"
+          },
+          "distinct": true,
+          "id": "0181b8f0ab7b072003807d126a209d970d46a6ab",
+          "message": "Add 30 minute timeout to GitHub Actions workflows",
+          "timestamp": "2026-01-08T19:07:18-08:00",
+          "tree_id": "48f08d4c2fde43f31600a7f52f3ce3c81079736d",
+          "url": "https://github.com/FigBug/Piano/commit/0181b8f0ab7b072003807d126a209d970d46a6ab"
+        },
+        "date": 1767928296319,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "1 voice",
+            "value": 119.5414,
+            "unit": "x realtime"
+          },
+          {
+            "name": "4 voices",
+            "value": 50.526,
+            "unit": "x realtime"
+          },
+          {
+            "name": "8 voices",
+            "value": 35.0868,
+            "unit": "x realtime"
+          },
+          {
+            "name": "16 voices",
+            "value": 22.28,
             "unit": "x realtime"
           }
         ]
