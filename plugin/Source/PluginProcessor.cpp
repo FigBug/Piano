@@ -114,8 +114,16 @@ static float userValue (int32_t index, float value)
 }
 
 //==============================================================================
+static gin::ProcessorOptions createProcessorOptions()
+{
+    gin::ProcessorOptions opts;
+    opts.withAdditionalCredits ({"Clayton Otey"});
+    opts.hasMidiLearn = true;
+    return opts;
+}
+
 PianoAudioProcessor::PianoAudioProcessor()
-    : gin::Processor (false, gin::ProcessorOptions().withAdditionalCredits({"Clayton Otey"}))
+    : gin::Processor (false, createProcessorOptions())
 {
 	setLatencySamples (interalBlockSize);
 	
@@ -203,6 +211,9 @@ void PianoAudioProcessor::releaseResources()
 void PianoAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midi)
 {
     juce::ScopedNoDenormals noDenormals;
+
+    if (midiLearn)
+        midiLearn->processBlock (midi, buffer.getNumSamples());
 
 	buffer.clear ();
     auto numSamples = buffer.getNumSamples();
