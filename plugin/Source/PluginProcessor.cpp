@@ -116,10 +116,9 @@ static float userValue (int32_t index, float value)
 //==============================================================================
 static gin::ProcessorOptions createProcessorOptions()
 {
-    gin::ProcessorOptions opts;
-    opts.withAdditionalCredits ({"Clayton Otey"});
-    opts.hasMidiLearn = true;
-    return opts;
+    return gin::ProcessorOptions()
+        .withAdditionalCredits ({"Clayton Otey"})
+        .withMidiLearn();
 }
 
 PianoAudioProcessor::PianoAudioProcessor()
