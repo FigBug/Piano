@@ -161,7 +161,6 @@ target_compile_definitions (${PLUGIN_NAME} PRIVATE
 								JUCE_USE_WINDOWS_MEDIA_FORMAT=0
 								DONT_SET_USING_JUCE_NAMESPACE=1
 								JUCE_IGNORE_VST3_MISMATCHED_PARAMETER_ID_WARNING=1
-								JucePlugin_PreferredChannelConfigurations={0,2}
 								_CRT_SECURE_NO_WARNINGS
 							)
 

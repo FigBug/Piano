@@ -1,2 +1,11 @@
+1.0.4:
+- Fixed channel layouts on Linux
+
 1.0.3:
 - Added MIDI learn
+
+1.0.2:
+- Fixed crash on Windows/Linux
+
+1.0.0:
+- Initial version

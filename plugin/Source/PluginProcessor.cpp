@@ -122,7 +122,7 @@ static gin::ProcessorOptions createProcessorOptions()
 }
 
 PianoAudioProcessor::PianoAudioProcessor()
-    : gin::Processor (false, createProcessorOptions())
+    : gin::Processor (BusesProperties().withOutput ("Output", juce::AudioChannelSet::stereo()), false, createProcessorOptions())
 {
 	setLatencySamples (interalBlockSize);
 	
