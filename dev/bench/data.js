@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1768092289779,
+  "lastUpdate": 1768093248952,
   "repoUrl": "https://github.com/FigBug/Piano",
   "entries": {
     "Piano Performance (Windows)": [
@@ -881,6 +881,50 @@ window.BENCHMARK_DATA = {
           {
             "name": "16 voices",
             "value": 20.947,
+            "unit": "x realtime"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "figbug@gmail.com",
+            "name": "Roland Rabien",
+            "username": "FigBug"
+          },
+          "committer": {
+            "email": "figbug@gmail.com",
+            "name": "Roland Rabien",
+            "username": "FigBug"
+          },
+          "distinct": true,
+          "id": "e557cecf0cca532041bbafaeae82bcdddca9c20e",
+          "message": "Fixed ProcessorOptions rvalue ref-qualifier issue",
+          "timestamp": "2026-01-10T16:05:04-08:00",
+          "tree_id": "02d4e9d52ad779772055b25b3f431a78b9eb7a0d",
+          "url": "https://github.com/FigBug/Piano/commit/e557cecf0cca532041bbafaeae82bcdddca9c20e"
+        },
+        "date": 1768093246678,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "1 voice",
+            "value": 140.3674,
+            "unit": "x realtime"
+          },
+          {
+            "name": "4 voices",
+            "value": 60.0081,
+            "unit": "x realtime"
+          },
+          {
+            "name": "8 voices",
+            "value": 37.5501,
+            "unit": "x realtime"
+          },
+          {
+            "name": "16 voices",
+            "value": 24.5814,
             "unit": "x realtime"
           }
         ]
