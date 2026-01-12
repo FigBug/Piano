@@ -1,3 +1,6 @@
+1.0.5:
+- Zip file updated
+
 1.0.4:
 - Fixed channel layouts on Linux
 
