@@ -1,12 +1,12 @@
 [submodule "modules/juce"]
 	path = modules/juce
-	url = git@github.com:juce-framework/JUCE.git
+	url = https://github.com/juce-framework/JUCE.git
 [submodule "modules/gin"]
 	path = modules/gin
-	url = git@github.com:FigBug/Gin.git
+	url = https://github.com/FigBug/Gin.git
 [submodule "modules/plugin_sdk"]
 	path = modules/plugin_sdk
-	url = git@github.com:TurnipHat/plugin_sdk.git
+	url = https://github.com/TurnipHat/plugin_sdk.git
 [submodule "modules/simde"]
 	path = modules/simde
 	url = https://github.com/simd-everywhere/simde-no-tests.git
