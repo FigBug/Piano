@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1768620043482,
+  "lastUpdate": 1768620167608,
   "repoUrl": "https://github.com/FigBug/Piano",
   "entries": {
     "Piano Performance (Windows)": [
@@ -703,6 +703,50 @@ window.BENCHMARK_DATA = {
           {
             "name": "16 voices",
             "value": 13.4097,
+            "unit": "x realtime"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "figbug@gmail.com",
+            "name": "Roland Rabien",
+            "username": "FigBug"
+          },
+          "committer": {
+            "email": "figbug@gmail.com",
+            "name": "Roland Rabien",
+            "username": "FigBug"
+          },
+          "distinct": true,
+          "id": "4469fd328fa1dcaf6d9ed69dd90e3dc28e28c01c",
+          "message": "Change submodule URLs from SSH to HTTPS",
+          "timestamp": "2026-01-16T19:15:37-08:00",
+          "tree_id": "655de31e01ce7d88f3087c82203402e42c8caacf",
+          "url": "https://github.com/FigBug/Piano/commit/4469fd328fa1dcaf6d9ed69dd90e3dc28e28c01c"
+        },
+        "date": 1768620157580,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "1 voice",
+            "value": 68.9392,
+            "unit": "x realtime"
+          },
+          {
+            "name": "4 voices",
+            "value": 26.1936,
+            "unit": "x realtime"
+          },
+          {
+            "name": "8 voices",
+            "value": 17.6595,
+            "unit": "x realtime"
+          },
+          {
+            "name": "16 voices",
+            "value": 13.4948,
             "unit": "x realtime"
           }
         ]
