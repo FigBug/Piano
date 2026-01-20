@@ -18,7 +18,7 @@ jobs:
         shell: pwsh
       - uses: actions/checkout@v4
         with:
-          submodules: true
+          submodules: recursive
       - name: Build plugin
         run: |
           # Build
