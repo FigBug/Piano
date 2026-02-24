@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1771970829826,
+  "lastUpdate": 1771970862348,
   "repoUrl": "https://github.com/FigBug/Piano",
   "entries": {
     "Piano Performance (Windows)": [
@@ -791,6 +791,50 @@ window.BENCHMARK_DATA = {
           {
             "name": "16 voices",
             "value": 13.6253,
+            "unit": "x realtime"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "figbug@gmail.com",
+            "name": "Roland Rabien",
+            "username": "FigBug"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "a14558efc33e68142200e05c82b095a8334c1038",
+          "message": "Change submodule checkout to recursive",
+          "timestamp": "2026-02-24T14:00:18-08:00",
+          "tree_id": "7624a26de0a2c47f2b6d4965482f511d9c2f3053",
+          "url": "https://github.com/FigBug/Piano/commit/a14558efc33e68142200e05c82b095a8334c1038"
+        },
+        "date": 1771970858178,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "1 voice",
+            "value": 72.8923,
+            "unit": "x realtime"
+          },
+          {
+            "name": "4 voices",
+            "value": 27.0603,
+            "unit": "x realtime"
+          },
+          {
+            "name": "8 voices",
+            "value": 19.5333,
+            "unit": "x realtime"
+          },
+          {
+            "name": "16 voices",
+            "value": 13.977,
             "unit": "x realtime"
           }
         ]
