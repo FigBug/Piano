@@ -33,9 +33,11 @@
 
 JuceLibraryCode
 Builds
-ci/bin
 .DS_Store
 build-test
 .claude
 build
-benchmark_results.json
+benchmark_results.jsonbin
+Installer/macOS/bin
+Installer/win/bin
+Installer/_flat_presets
