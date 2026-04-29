@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1777499814381,
+  "lastUpdate": 1777502226312,
   "repoUrl": "https://github.com/FigBug/Piano",
   "entries": {
     "Piano Performance (Windows)": [
@@ -1849,6 +1849,50 @@ window.BENCHMARK_DATA = {
           {
             "name": "16 voices",
             "value": 32.9455,
+            "unit": "x realtime"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "figbug@gmail.com",
+            "name": "Roland Rabien",
+            "username": "FigBug"
+          },
+          "committer": {
+            "email": "figbug@gmail.com",
+            "name": "Roland Rabien",
+            "username": "FigBug"
+          },
+          "distinct": true,
+          "id": "9f58fb60e51a6ad3eb0cdaf2ed8153a569cc0631",
+          "message": "Linux: use ninja-clang preset\n\nPiano's FFT code uses templated static const member declarations that\nGCC rejects under -fpermissive. The pre-installer build_linux.yaml\nexplicitly specified clang for this reason; the new unified flow now\nuses the gin ninja-clang preset to match.",
+          "timestamp": "2026-04-29T15:33:37-07:00",
+          "tree_id": "361d2aad871225ba626a54d4cf8685a7eaf328da",
+          "url": "https://github.com/FigBug/Piano/commit/9f58fb60e51a6ad3eb0cdaf2ed8153a569cc0631"
+        },
+        "date": 1777502224639,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "1 voice",
+            "value": 167.0057,
+            "unit": "x realtime"
+          },
+          {
+            "name": "4 voices",
+            "value": 65.7534,
+            "unit": "x realtime"
+          },
+          {
+            "name": "8 voices",
+            "value": 49.031,
+            "unit": "x realtime"
+          },
+          {
+            "name": "16 voices",
+            "value": 33.3195,
             "unit": "x realtime"
           }
         ]
