@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1777497635224,
+  "lastUpdate": 1777497826961,
   "repoUrl": "https://github.com/FigBug/Piano",
   "entries": {
     "Piano Performance (Windows)": [
@@ -879,6 +879,50 @@ window.BENCHMARK_DATA = {
           {
             "name": "16 voices",
             "value": 13.5854,
+            "unit": "x realtime"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "figbug@gmail.com",
+            "name": "Roland Rabien",
+            "username": "FigBug"
+          },
+          "committer": {
+            "email": "figbug@gmail.com",
+            "name": "Roland Rabien",
+            "username": "FigBug"
+          },
+          "distinct": true,
+          "id": "377122646e7668451e2d2bec1564951961606a79",
+          "message": "Switch to .pkg/.exe/.deb installers with Azure Trusted Signing\n\nReplaces the zip-based ci/build.sh flow with installer outputs (Inno Setup\non Windows, productbuild on macOS, cpack DEB on Linux) signed via Microsoft\nTrusted Signing on Windows and Apple Developer ID on macOS.",
+          "timestamp": "2026-04-29T14:16:44-07:00",
+          "tree_id": "65c4786699485eb0c76a0033109cf27bc9a07b5d",
+          "url": "https://github.com/FigBug/Piano/commit/377122646e7668451e2d2bec1564951961606a79"
+        },
+        "date": 1777497823594,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "1 voice",
+            "value": 73.5164,
+            "unit": "x realtime"
+          },
+          {
+            "name": "4 voices",
+            "value": 27.1269,
+            "unit": "x realtime"
+          },
+          {
+            "name": "8 voices",
+            "value": 19.5215,
+            "unit": "x realtime"
+          },
+          {
+            "name": "16 voices",
+            "value": 12.6157,
             "unit": "x realtime"
           }
         ]
