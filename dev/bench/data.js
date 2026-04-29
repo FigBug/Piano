@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1777499696470,
+  "lastUpdate": 1777499727910,
   "repoUrl": "https://github.com/FigBug/Piano",
   "entries": {
     "Piano Performance (Windows)": [
@@ -1761,6 +1761,50 @@ window.BENCHMARK_DATA = {
           {
             "name": "16 voices",
             "value": 21.5491,
+            "unit": "x realtime"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "figbug@gmail.com",
+            "name": "Roland Rabien",
+            "username": "FigBug"
+          },
+          "committer": {
+            "email": "figbug@gmail.com",
+            "name": "Roland Rabien",
+            "username": "FigBug"
+          },
+          "distinct": true,
+          "id": "0fc77264da8c42ba925825097c28d244709722fb",
+          "message": "Fix flaky productsign gate: use INSTALLER env var presence\n\n`security find-identity -v` was intermittently not seeing the imported\nDeveloper ID Installer cert on the GitHub Actions macos-latest runner,\ncausing the .pkg to ship unsigned and Apple notary to reject it. Gate the\ncodesign / productsign branches on the env-var presence (which is what the\nkeychain bootstrap already gated on) instead.\n\nAlso surface notary rejection details on failure via `xcrun notarytool log`.",
+          "timestamp": "2026-04-29T14:46:41-07:00",
+          "tree_id": "40e3fff56397428ce28a7f3e76df22a3e1d69ac8",
+          "url": "https://github.com/FigBug/Piano/commit/0fc77264da8c42ba925825097c28d244709722fb"
+        },
+        "date": 1777499726233,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "1 voice",
+            "value": 144.2332,
+            "unit": "x realtime"
+          },
+          {
+            "name": "4 voices",
+            "value": 72.3593,
+            "unit": "x realtime"
+          },
+          {
+            "name": "8 voices",
+            "value": 51.4104,
+            "unit": "x realtime"
+          },
+          {
+            "name": "16 voices",
+            "value": 32.9455,
             "unit": "x realtime"
           }
         ]
