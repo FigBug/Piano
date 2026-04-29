@@ -124,11 +124,11 @@ if [ "$PLATFORM" = "macOS" ]; then
 
 elif [ "$PLATFORM" = "linux" ]; then
   cd "$PROJECT_ROOT"
-  cmake --preset ninja-gcc
-  cmake --build --preset ninja-gcc --config Release
-  cd "$PROJECT_ROOT/Builds/ninja-gcc"
+  cmake --preset ninja-clang
+  cmake --build --preset ninja-clang --config Release
+  cd "$PROJECT_ROOT/Builds/ninja-clang"
   cpack -G DEB -C Release
-  cp "$PROJECT_ROOT/Builds/ninja-gcc/"*.deb "$PROJECT_ROOT/bin/"
+  cp "$PROJECT_ROOT/Builds/ninja-clang/"*.deb "$PROJECT_ROOT/bin/"
 
 else
   cd "$PROJECT_ROOT"
