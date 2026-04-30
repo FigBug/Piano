@@ -1,3 +1,6 @@
+1.0.6:
+- Created installers
+
 1.0.5:
 - Zip file updated
 
