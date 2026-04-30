@@ -35,8 +35,13 @@ fi
 
 gh release create "$TAG" --title "$TAG" -F /tmp/release_notes.txt "${ASSETS[@]}"
 
+PLUGIN=piano
 for f in "./Binaries Linux"/*.deb \
          "./Binaries Windows"/*.exe \
          "./Binaries macOS"/*.pkg; do
-  curl -F "files=@${f}" "https://socalabs.com/files/set.php?key=$APIKEY"
+  curl -sS --fail-with-body -F "files=@${f}" \
+          -F "plugin=${PLUGIN}" \
+          -F "version=${VER}" \
+          -F "changelog=${NOTES}" \
+          "https://socalabs.com/files/upload.php?key=$APIKEY"
 done
