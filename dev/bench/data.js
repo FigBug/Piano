@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1777502376804,
+  "lastUpdate": 1777566550371,
   "repoUrl": "https://github.com/FigBug/Piano",
   "entries": {
     "Piano Performance (Windows)": [
@@ -1937,6 +1937,50 @@ window.BENCHMARK_DATA = {
           {
             "name": "16 voices",
             "value": 33.3195,
+            "unit": "x realtime"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "figbug@gmail.com",
+            "name": "Roland Rabien",
+            "username": "FigBug"
+          },
+          "committer": {
+            "email": "figbug@gmail.com",
+            "name": "Roland Rabien",
+            "username": "FigBug"
+          },
+          "distinct": true,
+          "id": "bfd0aa78e4200fadabac4ea18b8bb1957252a11c",
+          "message": "release: harden upload pipeline (TAG/VER split, --fail-with-body, GITHUB_TOKEN, contents:write)\n\nAligns with the chip-plugin repos:\n- Use TAG (with v prefix) for gh release create, VER (stripped) for\n  Changelist lookup and upload.php's version field.\n- curl --fail-with-body so server-side errors fail the workflow instead of\n  passing silently.\n- Switch GH_TOKEN to the auto-provided GITHUB_TOKEN with explicit\n  contents:write permission, dropping the dependency on a per-repo\n  ACCESS_TOKEN PAT.",
+          "timestamp": "2026-04-30T09:25:29-07:00",
+          "tree_id": "eaae3eb3a5af56965e49fbfeae2cb2eab92683e1",
+          "url": "https://github.com/FigBug/Piano/commit/bfd0aa78e4200fadabac4ea18b8bb1957252a11c"
+        },
+        "date": 1777566548576,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "1 voice",
+            "value": 145.1509,
+            "unit": "x realtime"
+          },
+          {
+            "name": "4 voices",
+            "value": 59.3917,
+            "unit": "x realtime"
+          },
+          {
+            "name": "8 voices",
+            "value": 43.2201,
+            "unit": "x realtime"
+          },
+          {
+            "name": "16 voices",
+            "value": 26.8296,
             "unit": "x realtime"
           }
         ]
