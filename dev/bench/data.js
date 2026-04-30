@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1777585224368,
+  "lastUpdate": 1777589170311,
   "repoUrl": "https://github.com/FigBug/Piano",
   "entries": {
     "Piano Performance (Windows)": [
@@ -3479,6 +3479,50 @@ window.BENCHMARK_DATA = {
           {
             "name": "16 voices",
             "value": 22.5615,
+            "unit": "x realtime"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "figbug@gmail.com",
+            "name": "Roland Rabien",
+            "username": "FigBug"
+          },
+          "committer": {
+            "email": "figbug@gmail.com",
+            "name": "Roland Rabien",
+            "username": "FigBug"
+          },
+          "distinct": true,
+          "id": "54c9cbce3b9f61b496f22719f2d8fa3b44b8cad7",
+          "message": "VST2 install path; disable build workflow",
+          "timestamp": "2026-04-30T15:42:39-07:00",
+          "tree_id": "0215e8f8c01f9bed3030549c76b68411c5bd8b97",
+          "url": "https://github.com/FigBug/Piano/commit/54c9cbce3b9f61b496f22719f2d8fa3b44b8cad7"
+        },
+        "date": 1777589169279,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "1 voice",
+            "value": 102.6919,
+            "unit": "x realtime"
+          },
+          {
+            "name": "4 voices",
+            "value": 48.3355,
+            "unit": "x realtime"
+          },
+          {
+            "name": "8 voices",
+            "value": 35.0597,
+            "unit": "x realtime"
+          },
+          {
+            "name": "16 voices",
+            "value": 23.5625,
             "unit": "x realtime"
           }
         ]
