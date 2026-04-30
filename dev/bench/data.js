@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1777582437660,
+  "lastUpdate": 1777582627108,
   "repoUrl": "https://github.com/FigBug/Piano",
   "entries": {
     "Piano Performance (Windows)": [
@@ -1143,6 +1143,50 @@ window.BENCHMARK_DATA = {
           {
             "name": "16 voices",
             "value": 13.3901,
+            "unit": "x realtime"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "figbug@gmail.com",
+            "name": "Roland Rabien",
+            "username": "FigBug"
+          },
+          "committer": {
+            "email": "figbug@gmail.com",
+            "name": "Roland Rabien",
+            "username": "FigBug"
+          },
+          "distinct": true,
+          "id": "3726a5669d096cf9a19dc6c3fe3e4e3b8f3220c9",
+          "message": "Replace reFX EULA with AGPL-3.0 — these plugins are open source",
+          "timestamp": "2026-04-30T13:50:24-07:00",
+          "tree_id": "48daf4bf852449dc8b7fdb4963a03bed0874b4c6",
+          "url": "https://github.com/FigBug/Piano/commit/3726a5669d096cf9a19dc6c3fe3e4e3b8f3220c9"
+        },
+        "date": 1777582624460,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "1 voice",
+            "value": 70.7451,
+            "unit": "x realtime"
+          },
+          {
+            "name": "4 voices",
+            "value": 26.5415,
+            "unit": "x realtime"
+          },
+          {
+            "name": "8 voices",
+            "value": 19.1689,
+            "unit": "x realtime"
+          },
+          {
+            "name": "16 voices",
+            "value": 13.5002,
             "unit": "x realtime"
           }
         ]
