@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1777741950086,
+  "lastUpdate": 1777837736476,
   "repoUrl": "https://github.com/FigBug/Piano",
   "entries": {
     "Piano Performance (Windows)": [
@@ -3875,6 +3875,50 @@ window.BENCHMARK_DATA = {
           {
             "name": "16 voices",
             "value": 22.3571,
+            "unit": "x realtime"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "figbug@gmail.com",
+            "name": "Roland Rabien",
+            "username": "FigBug"
+          },
+          "committer": {
+            "email": "figbug@gmail.com",
+            "name": "Roland Rabien",
+            "username": "FigBug"
+          },
+          "distinct": true,
+          "id": "de823ee68822500a76f402b11aa4aa1af52bc589",
+          "message": "Update Gin",
+          "timestamp": "2026-05-03T12:40:47-07:00",
+          "tree_id": "a8e933f3e787c07561dd26f2cd0931d2da437f8e",
+          "url": "https://github.com/FigBug/Piano/commit/de823ee68822500a76f402b11aa4aa1af52bc589"
+        },
+        "date": 1777837735929,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "1 voice",
+            "value": 118.4528,
+            "unit": "x realtime"
+          },
+          {
+            "name": "4 voices",
+            "value": 50.5298,
+            "unit": "x realtime"
+          },
+          {
+            "name": "8 voices",
+            "value": 35.0861,
+            "unit": "x realtime"
+          },
+          {
+            "name": "16 voices",
+            "value": 22.4761,
             "unit": "x realtime"
           }
         ]
