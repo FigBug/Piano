@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1777838689022,
+  "lastUpdate": 1784251383355,
   "repoUrl": "https://github.com/FigBug/Piano",
   "entries": {
     "Piano Performance (Windows)": [
@@ -4007,6 +4007,50 @@ window.BENCHMARK_DATA = {
           {
             "name": "16 voices",
             "value": 22.4761,
+            "unit": "x realtime"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "figbug@gmail.com",
+            "name": "Roland Rabien",
+            "username": "FigBug"
+          },
+          "committer": {
+            "email": "figbug@gmail.com",
+            "name": "Roland Rabien",
+            "username": "FigBug"
+          },
+          "distinct": true,
+          "id": "9b7d798ecb7e2a92d05cae6d7db84b3e04970f8a",
+          "message": "Add crash reporting (bundle CrashReporter, strip, symbols, upload)\n\n- register plugin + ship Installer/crashreporter.json\n- installer bundles the shared CrashReporter (mac pkg + component-plist +\n  reporter-scripts promote-if-newer; win .iss shared component) and the JSON\n- strip shipped mac binaries; add CLAP to the Windows symbol loop (dSYM/PDB\n  config was already present for the other formats)\n- launchCrashReporterOnce() from the processor on first instance\n- upload dSYM/PDB symbols to the crash site from release.yaml\n- bump to 1.0.9",
+          "timestamp": "2026-07-16T18:18:36-07:00",
+          "tree_id": "7da4e9831b7f38eb4d07674ac2db597badfc176a",
+          "url": "https://github.com/FigBug/Piano/commit/9b7d798ecb7e2a92d05cae6d7db84b3e04970f8a"
+        },
+        "date": 1784251382269,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "1 voice",
+            "value": 120.748,
+            "unit": "x realtime"
+          },
+          {
+            "name": "4 voices",
+            "value": 50.1961,
+            "unit": "x realtime"
+          },
+          {
+            "name": "8 voices",
+            "value": 34.3178,
+            "unit": "x realtime"
+          },
+          {
+            "name": "16 voices",
+            "value": 22.3396,
             "unit": "x realtime"
           }
         ]
