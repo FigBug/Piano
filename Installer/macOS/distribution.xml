@@ -12,6 +12,7 @@
         <line choice="com.socalabs.piano.vst3"/>
         <line choice="com.socalabs.piano.au"/>
         <line choice="com.socalabs.piano.clap"/>
+        <line choice="com.socalabs.piano.crashreporter"/>
 
     </choices-outline>
 
@@ -43,10 +44,19 @@
         <pkg-ref id="com.socalabs.piano.clap.pkg"/>
     </choice>
 
+    <choice id="com.socalabs.piano.crashreporter"
+            title="Crash Reporter"
+            description="Install the shared crash reporter that sends crash reports to SocaLabs. Recommended; only updated if newer."
+            visible="true"
+            enabled="true"
+            selected="true">
+        <pkg-ref id="com.socalabs.piano.crashreporter.pkg"/>
+    </choice>
 
     <pkg-ref id="com.socalabs.piano.vst.pkg"   version="0">vst.pkg</pkg-ref>
     <pkg-ref id="com.socalabs.piano.vst3.pkg"  version="0">vst3.pkg</pkg-ref>
     <pkg-ref id="com.socalabs.piano.au.pkg"    version="0">au.pkg</pkg-ref>
     <pkg-ref id="com.socalabs.piano.clap.pkg"  version="0">clap.pkg</pkg-ref>
+    <pkg-ref id="com.socalabs.piano.crashreporter.pkg" version="0">reporter.pkg</pkg-ref>
 
 </installer-gui-script>

@@ -201,7 +201,7 @@ if (APPLE)
 endif()
 
 if (WIN32)
-    foreach(t ${FORMATS} "All" "")
+    foreach(t ${FORMATS} "CLAP" "All" "")
         set(tgt ${CMAKE_PROJECT_NAME})
         if (NOT t STREQUAL "")
             set(tgt ${tgt}_${t})
