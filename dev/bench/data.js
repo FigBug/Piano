@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1784666778106,
+  "lastUpdate": 1784666850770,
   "repoUrl": "https://github.com/FigBug/Piano",
   "entries": {
     "Piano Performance (Windows)": [
@@ -2905,6 +2905,50 @@ window.BENCHMARK_DATA = {
           {
             "name": "16 voices",
             "value": 16.906,
+            "unit": "x realtime"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "figbug@gmail.com",
+            "name": "Roland Rabien",
+            "username": "FigBug"
+          },
+          "committer": {
+            "email": "figbug@gmail.com",
+            "name": "Roland Rabien",
+            "username": "FigBug"
+          },
+          "distinct": true,
+          "id": "e1994ca27a724750a5345bede4341be2a4ce6237",
+          "message": "Update clap-juce-extensions",
+          "timestamp": "2026-07-21T13:42:58-07:00",
+          "tree_id": "e436f202a1535967640daf9cf48304d7095c9144",
+          "url": "https://github.com/FigBug/Piano/commit/e1994ca27a724750a5345bede4341be2a4ce6237"
+        },
+        "date": 1784666847422,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "1 voice",
+            "value": 118.6105,
+            "unit": "x realtime"
+          },
+          {
+            "name": "4 voices",
+            "value": 48.4587,
+            "unit": "x realtime"
+          },
+          {
+            "name": "8 voices",
+            "value": 33.1103,
+            "unit": "x realtime"
+          },
+          {
+            "name": "16 voices",
+            "value": 20.7911,
             "unit": "x realtime"
           }
         ]
