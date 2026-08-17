@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1786930345958,
+  "lastUpdate": 1786930397175,
   "repoUrl": "https://github.com/FigBug/Piano",
   "entries": {
     "Piano Performance (Windows)": [
@@ -4755,6 +4755,50 @@ window.BENCHMARK_DATA = {
           {
             "name": "16 voices",
             "value": 22.3134,
+            "unit": "x realtime"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "roland@rabien.com",
+            "name": "Roland Rabien",
+            "username": "FigBug"
+          },
+          "committer": {
+            "email": "roland@rabien.com",
+            "name": "Roland Rabien",
+            "username": "FigBug"
+          },
+          "distinct": true,
+          "id": "a52c2602ce363158c6044e43e934a36c5d4c2413",
+          "message": "Version bump\n\nCo-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>\nClaude-Session: https://claude.ai/code/session_01ELNQuX99yqAmZ5KzBDXKAR",
+          "timestamp": "2026-08-16T18:19:47-07:00",
+          "tree_id": "88dfd74fc2e150a71797f2d6f8ca0d5fa9afafdc",
+          "url": "https://github.com/FigBug/Piano/commit/a52c2602ce363158c6044e43e934a36c5d4c2413"
+        },
+        "date": 1786930395752,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "1 voice",
+            "value": 120.7135,
+            "unit": "x realtime"
+          },
+          {
+            "name": "4 voices",
+            "value": 49.7765,
+            "unit": "x realtime"
+          },
+          {
+            "name": "8 voices",
+            "value": 33.8232,
+            "unit": "x realtime"
+          },
+          {
+            "name": "16 voices",
+            "value": 22.3845,
             "unit": "x realtime"
           }
         ]
