@@ -262,7 +262,7 @@ static gin::ProcessorOptions createProcessorOptions()
 {
     return gin::ProcessorOptions()
         .withAdditionalCredits ({"Clayton Otey"})
-        .withMidiLearn();
+        .withMidiLearn ({ 64 }); // CC64 is handled by the sustain pedal
 }
 
 PianoAudioProcessor::PianoAudioProcessor()
@@ -337,6 +337,8 @@ void PianoAudioProcessor::updateState()
 void PianoAudioProcessor::reset()
 {
     Processor::reset();
+
+    sustainPedal.reset();
 }
 
 void PianoAudioProcessor::prepareToPlay (double newSampleRate, int newSamplesPerBlock)
@@ -345,6 +347,8 @@ void PianoAudioProcessor::prepareToPlay (double newSampleRate, int newSamplesPer
 
     piano = std::make_unique<Piano>();
     piano->init (float (newSampleRate), interalBlockSize);
+
+	sustainPedal.reset();
 
 	fifoIn.setSize (2, newSamplesPerBlock * 2 + interalBlockSize);
 	fifoOut.setSize (2, newSamplesPerBlock * 2 + interalBlockSize);
@@ -368,6 +372,7 @@ void PianoAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::
     auto numSamples = buffer.getNumSamples();
 
 	keyState.processNextMidiBuffer (midi, 0, numSamples, true);
+	sustainPedal.processMidi (midi);
 
     int idx = 0;
     for (auto p : params)

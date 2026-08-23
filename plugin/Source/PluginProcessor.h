@@ -2,6 +2,7 @@
 
 #include <JuceHeader.h>
 #include "qiano.h"
+#include "SustainPedal.h"
 
 //==============================================================================
 class PianoAudioProcessor : public gin::Processor
@@ -26,6 +27,7 @@ public:
     bool hasEditor() const override;
 
     juce::MidiKeyboardState keyState;
+    SustainPedal sustainPedal;
 
     std::unique_ptr<Piano> piano;
 
