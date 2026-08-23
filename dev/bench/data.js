@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1787502341082,
+  "lastUpdate": 1787502482537,
   "repoUrl": "https://github.com/FigBug/Piano",
   "entries": {
     "Piano Performance (Windows)": [
@@ -1451,6 +1451,50 @@ window.BENCHMARK_DATA = {
           {
             "name": "16 voices",
             "value": 16.5063,
+            "unit": "x realtime"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "figbug@gmail.com",
+            "name": "Roland Rabien",
+            "username": "FigBug"
+          },
+          "committer": {
+            "email": "figbug@gmail.com",
+            "name": "Roland Rabien",
+            "username": "FigBug"
+          },
+          "distinct": true,
+          "id": "eb710befbb6583da6b2eae2ca7cbcc557455b64c",
+          "message": "Use bidirectional parameter conversion functions\n\nReplace the textFunction with a conversion function that also converts\ntext back to values via analytic inverses of the userValue mappings.",
+          "timestamp": "2026-08-23T09:21:09-07:00",
+          "tree_id": "efa0b9831369132e850e42b80aeb8ca921f821ac",
+          "url": "https://github.com/FigBug/Piano/commit/eb710befbb6583da6b2eae2ca7cbcc557455b64c"
+        },
+        "date": 1787502479496,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "1 voice",
+            "value": 85.9124,
+            "unit": "x realtime"
+          },
+          {
+            "name": "4 voices",
+            "value": 33.8546,
+            "unit": "x realtime"
+          },
+          {
+            "name": "8 voices",
+            "value": 23.5454,
+            "unit": "x realtime"
+          },
+          {
+            "name": "16 voices",
+            "value": 16.1597,
             "unit": "x realtime"
           }
         ]
