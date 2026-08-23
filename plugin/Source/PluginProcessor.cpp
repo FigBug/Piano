@@ -136,6 +136,127 @@ static float userValue (int32_t index, float value)
     return v;
 }
 
+// Inverse of v = scale * exp (rate * (value - offset))
+static float invExp (float v, float scale, float rate, float offset)
+{
+    if (v <= 0.0f)
+        return 0.0f;
+
+    return std::log (v / scale) / rate + offset;
+}
+
+static float userValueInverse (int32_t index, float v)
+{
+    float value = 0;
+
+    switch (index)
+    {
+        case pYoungsModulus:
+            value = invExp (v, 200.0f, 4.0f, 0.5f);
+            break;
+        case pStringDensity:
+            value = invExp (v, 7850.0f, 4.0f, 0.5f);
+            break;
+        case pHammerMass:
+            value = invExp (v, 1.0f, 4.0f, 0.5f);
+            break;
+        case pStringTension:
+            value = invExp (v, 800.0f, 3.0f, 0.5f);
+            break;
+        case pStringLength:
+            value = invExp (v, 1.0f, 2.0f, 0.25f);
+            break;
+        case pStringRadius:
+            value = invExp (v, 1.0f, 2.0f, 0.25f);
+            break;
+        case pHammerCompliance:
+            value = v / 2.0f;
+            break;
+        case pHammerSpringConstant:
+            value = v / 2.0f;
+            break;
+        case pHammerHysteresis:
+            value = invExp (v, 1.0f, 4.0f, 0.5f);
+            break;
+        case pBridgeImpedance:
+            value = invExp (v, 8000.0f, 12.0f, 0.5f);
+            break;
+        case pBridgeHorizontalImpedance:
+            value = invExp (v, 60000.0f, 12.0f, 0.5f);
+            break;
+        case pVerticalHorizontalImpedance:
+            value = invExp (v, 400.0f, 12.0f, 0.5f);
+            break;
+        case pHammerPosition:
+            value = (v - 0.05f) / 0.15f;
+            break;
+        case pSoundboardSize:
+            value = v;
+            break;
+        case pStringDecay:
+            value = invExp (v, 0.25f, 6.0f, 0.25f);
+            break;
+        case pStringLopass:
+            value = invExp (v, 5.85f, 6.0f, 0.5f);
+            break;
+        case pDampedStringDecay:
+            value = invExp (v, 8.0f, 6.0f, 0.5f);
+            break;
+        case pDampedStringLopass:
+            value = invExp (v, 25.0f, 6.0f, 0.5f);
+            break;
+        case pSoundboardDecay:
+            value = invExp (v, 20.0f, 4.0f, 0.5f);
+            break;
+        case pSoundboardLopass:
+            value = invExp (v, 20.0f, 4.0f, 0.5f);
+            break;
+        case pLongitudinalGamma:
+            value = invExp (v, 1e-2f, 10.0f, 0.5f);
+            break;
+        case pLongitudinalGammaQuadratic:
+            value = invExp (v, 1.0e-2f, 8.0f, 0.5f);
+            break;
+        case pLongitudinalGammaDamped:
+            value = invExp (v, 5e-2f, 10.0f, 0.5f);
+            break;
+        case pLongitudinalGammaQuadraticDamped:
+            value = invExp (v, 3.0e-2f, 8.0f, 0.5f);
+            break;
+        case pLongitudinalMix:
+            value = (v == 0.0f) ? 0.0f : invExp (v, 1e0f, 16.0f, 0.5f);
+            break;
+        case pLongitudinalTransverseMix:
+            value = (v == 0.0f) ? 0.0f : invExp (v, 1e0f, 16.0f, 0.5f);
+            break;
+        case pVolume:
+            value = invExp (v, 5e-3f, 8.0f, 0.5f);
+            break;
+        case pMaxVelocity:
+            value = invExp (v, 10.0f, 8.0f, 0.5f);
+            break;
+        case pStringDetuning:
+            value = invExp (v, 1.0f, 10.0f, 0.5f);
+            break;
+        case pBridgeMass:
+            value = invExp (v, 10.0f, 10.0f, 0.5f);
+            break;
+        case pBridgeSpring:
+            value = invExp (v, 1e5f, 20.0f, 0.5f);
+            break;
+        case pDwgs4:
+            value = v;
+            break;
+        case pDownsample:
+            value = v - 1.0f;
+            break;
+        case pLongModes:
+            value = v - 1.0f;
+            break;
+    }
+    return juce::jlimit (0.0f, 1.0f, value);
+}
+
 //==============================================================================
 static gin::ProcessorOptions createProcessorOptions()
 {
@@ -151,46 +272,50 @@ PianoAudioProcessor::PianoAudioProcessor()
 
 	setLatencySamples (interalBlockSize);
 	
-    auto textFunction = [this] (const gin::Parameter& p, float v)
+    auto conversionFunction = [this] (const gin::Parameter& p, const std::variant<float, juce::String>& in) -> std::variant<float, juce::String>
     {
         int idx = params.indexOf (&p);
-        return juce::String (userValue (idx, v), 1);
+
+        if (auto v = std::get_if<float> (&in))
+            return juce::String (userValue (idx, *v), 1);
+
+        return userValueInverse (idx, std::get<juce::String> (in).getFloatValue());
     };
 
-    params.add (addExtParam ("YoungsModulus", "Youngs Modulus", "", "GPa", { 0.0f, 1.0f }, 0.5f, {0.0f}, textFunction));
-    params.add (addExtParam ("StringDensity", "String Density", "", "kg/m^3" , { 0.0f, 1.0f }, 0.5f, {0.0f}, textFunction));
-    params.add (addExtParam ("HammerMass", "Hammer Mass", "", "kg" , { 0.0f, 1.0f }, 0.5f, {0.0f}, textFunction));
-    params.add (addExtParam ("StringTension", "String Tension", "", "kg*m/s^2" , { 0.0f, 1.0f }, 0.5f, {0.0f}, textFunction));
-    params.add (addExtParam ("StringLength", "String Length", "", "m" , { 0.0f, 1.0f }, 0.25f, {0.0f}, textFunction));
-    params.add (addExtParam ("StringRadius", "String Radius", "", "m" , { 0.0f, 1.0f }, 0.25f, {0.0f}, textFunction));
-    params.add (addExtParam ("HammerCompliance", "Hammer Compliance", "", "" , { 0.0f, 1.0f }, 0.5f, {0.0f}, textFunction));
-    params.add (addExtParam ("HammerSpringConstant", "Hammer Spring Constant", "", "kg/s^2" , { 0.0f, 1.0f }, 0.5f, {0.0f}, textFunction));
-    params.add (addExtParam ("HammerHysteresis", "Hammer Hysteresis", "", "" , { 0.0f, 1.0f }, 0.5f, {0.0f}, textFunction));
-    params.add (addExtParam ("HammerPosition", "Hammer Position", "", "" , { 0.0f, 1.0f }, 0.5f, {0.0f}, textFunction));
-    params.add (addExtParam ("BridgeImpedance", "Bridge Impedance", "", "" , { 0.0f, 1.0f }, 0.5f, {0.0f}, textFunction));
-    params.add (addExtParam ("BridgeHorizontalImpedance", "Bridge Horizontal Impedance", "", "" , { 0.0f, 1.0f }, 0.5f, {0.0f}, textFunction));
-    params.add (addExtParam ("VerticalHorizontalImpedance", "Vertical Horizontal Impedance", "", "" , { 0.0f, 1.0f }, 0.5f, {0.0f}, textFunction));
-    params.add (addExtParam ("SoundboardSize", "Soundboard Size", "", "" , { 0.0f, 1.0f }, 0.0f, {0.0f}, textFunction));
-    params.add (addExtParam ("StringDecay", "String Decay", "", "" , { 0.0f, 1.0f }, 0.25f, {0.0f}, textFunction));
-    params.add (addExtParam ("StringLopass", "String Lopass", "", "" , { 0.0f, 1.0f }, 0.5f, {0.0f}, textFunction));
-    params.add (addExtParam ("DampedStringDecay", "Damped String Decay", "", "" , { 0.0f, 1.0f }, 0.5f, {0.0f}, textFunction));
-    params.add (addExtParam ("DampedStringLopass", "Damped String Lopass", "", "" , { 0.0f, 1.0f }, 0.5f, {0.0f}, textFunction));
-    params.add (addExtParam ("SoundboardDecay", "Soundboard Decay", "", "" , { 0.0f, 1.0f }, 0.5f, {0.0f}, textFunction));
-    params.add (addExtParam ("SoundboardLopass", "Soundboard Lopass", "", "" , { 0.0f, 1.0f }, 0.5f, {0.0f}, textFunction));
-    params.add (addExtParam ("LongitudinalGamma", "Longitudinal Gamma", "", "" , { 0.0f, 1.0f }, 0.5f, {0.0f}, textFunction));
-    params.add (addExtParam ("LongitudinalGammaQuadratic", "Longitudinal Gamma Quadratic", "", "" , { 0.0f, 1.0f }, 0.0f, {0.0f}, textFunction));
-    params.add (addExtParam ("LongitudinalGammaDamped", "Longitudinal Gamma Damped", "", "" , { 0.0f, 1.0f }, 0.5f, {0.0f}, textFunction));
-    params.add (addExtParam ("LongitudinalGammaQuadDamped", "Longitudinal Gamma Quadratic Damped", "", "" , { 0.0f, 1.0f }, 0.0f, {0.0f}, textFunction));
-    params.add (addExtParam ("LongitudinalMix", "Longitudinal Mix", "", "" , { 0.0f, 1.0f }, 0.5f, {0.0f}, textFunction));
-    params.add (addExtParam ("LongitudinalTransverseMix", "Longitudinal Transverse Mix", "", "" , { 0.0f, 1.0f }, 0.5f, {0.0f}, textFunction));
-    params.add (addExtParam ("Volume", "Volume", "", "" , { 0.0f, 1.0f }, 0.5f, {0.0f}, textFunction));
-    params.add (addExtParam ("MaxVelocity", "Max Velocity", "", "m/s" , { 0.0f, 1.0f }, 0.5f, {0.0f}, textFunction));
-    params.add (addExtParam ("StringDetuning", "String Detuning", "", "%" , { 0.0f, 1.0f }, 0.5f, {0.0f}, textFunction));
-    params.add (addExtParam ("BridgeMass", "Bridge Mass", "", "kg" , { 0.0f, 1.0f }, 0.5f, {0.0f}, textFunction));
-    params.add (addExtParam ("BridgeSpring", "Bridge Spring", "", "kg/s^2" , { 0.0f, 1.0f }, 0.5f, {0.0f}, textFunction));
-    params.add (addExtParam ("Dwgs4", "Dwgs4", "", "" , { 0.0f, 1.0f }, 1.0f, {0.0f}, textFunction));
-    params.add (addExtParam ("Downsample", "Downsample", "", "" , { 0.0f, 1.0f }, 0.0f, {0.0f}, textFunction));
-    params.add (addExtParam ("LongModes", "Long Modes", "", "", { 0.0f, 1.0f }, 0.0f, {0.0f}, textFunction));
+    params.add (addExtParam ("YoungsModulus", "Youngs Modulus", "", "GPa", { 0.0f, 1.0f }, 0.5f, {0.0f}, conversionFunction));
+    params.add (addExtParam ("StringDensity", "String Density", "", "kg/m^3" , { 0.0f, 1.0f }, 0.5f, {0.0f}, conversionFunction));
+    params.add (addExtParam ("HammerMass", "Hammer Mass", "", "kg" , { 0.0f, 1.0f }, 0.5f, {0.0f}, conversionFunction));
+    params.add (addExtParam ("StringTension", "String Tension", "", "kg*m/s^2" , { 0.0f, 1.0f }, 0.5f, {0.0f}, conversionFunction));
+    params.add (addExtParam ("StringLength", "String Length", "", "m" , { 0.0f, 1.0f }, 0.25f, {0.0f}, conversionFunction));
+    params.add (addExtParam ("StringRadius", "String Radius", "", "m" , { 0.0f, 1.0f }, 0.25f, {0.0f}, conversionFunction));
+    params.add (addExtParam ("HammerCompliance", "Hammer Compliance", "", "" , { 0.0f, 1.0f }, 0.5f, {0.0f}, conversionFunction));
+    params.add (addExtParam ("HammerSpringConstant", "Hammer Spring Constant", "", "kg/s^2" , { 0.0f, 1.0f }, 0.5f, {0.0f}, conversionFunction));
+    params.add (addExtParam ("HammerHysteresis", "Hammer Hysteresis", "", "" , { 0.0f, 1.0f }, 0.5f, {0.0f}, conversionFunction));
+    params.add (addExtParam ("HammerPosition", "Hammer Position", "", "" , { 0.0f, 1.0f }, 0.5f, {0.0f}, conversionFunction));
+    params.add (addExtParam ("BridgeImpedance", "Bridge Impedance", "", "" , { 0.0f, 1.0f }, 0.5f, {0.0f}, conversionFunction));
+    params.add (addExtParam ("BridgeHorizontalImpedance", "Bridge Horizontal Impedance", "", "" , { 0.0f, 1.0f }, 0.5f, {0.0f}, conversionFunction));
+    params.add (addExtParam ("VerticalHorizontalImpedance", "Vertical Horizontal Impedance", "", "" , { 0.0f, 1.0f }, 0.5f, {0.0f}, conversionFunction));
+    params.add (addExtParam ("SoundboardSize", "Soundboard Size", "", "" , { 0.0f, 1.0f }, 0.0f, {0.0f}, conversionFunction));
+    params.add (addExtParam ("StringDecay", "String Decay", "", "" , { 0.0f, 1.0f }, 0.25f, {0.0f}, conversionFunction));
+    params.add (addExtParam ("StringLopass", "String Lopass", "", "" , { 0.0f, 1.0f }, 0.5f, {0.0f}, conversionFunction));
+    params.add (addExtParam ("DampedStringDecay", "Damped String Decay", "", "" , { 0.0f, 1.0f }, 0.5f, {0.0f}, conversionFunction));
+    params.add (addExtParam ("DampedStringLopass", "Damped String Lopass", "", "" , { 0.0f, 1.0f }, 0.5f, {0.0f}, conversionFunction));
+    params.add (addExtParam ("SoundboardDecay", "Soundboard Decay", "", "" , { 0.0f, 1.0f }, 0.5f, {0.0f}, conversionFunction));
+    params.add (addExtParam ("SoundboardLopass", "Soundboard Lopass", "", "" , { 0.0f, 1.0f }, 0.5f, {0.0f}, conversionFunction));
+    params.add (addExtParam ("LongitudinalGamma", "Longitudinal Gamma", "", "" , { 0.0f, 1.0f }, 0.5f, {0.0f}, conversionFunction));
+    params.add (addExtParam ("LongitudinalGammaQuadratic", "Longitudinal Gamma Quadratic", "", "" , { 0.0f, 1.0f }, 0.0f, {0.0f}, conversionFunction));
+    params.add (addExtParam ("LongitudinalGammaDamped", "Longitudinal Gamma Damped", "", "" , { 0.0f, 1.0f }, 0.5f, {0.0f}, conversionFunction));
+    params.add (addExtParam ("LongitudinalGammaQuadDamped", "Longitudinal Gamma Quadratic Damped", "", "" , { 0.0f, 1.0f }, 0.0f, {0.0f}, conversionFunction));
+    params.add (addExtParam ("LongitudinalMix", "Longitudinal Mix", "", "" , { 0.0f, 1.0f }, 0.5f, {0.0f}, conversionFunction));
+    params.add (addExtParam ("LongitudinalTransverseMix", "Longitudinal Transverse Mix", "", "" , { 0.0f, 1.0f }, 0.5f, {0.0f}, conversionFunction));
+    params.add (addExtParam ("Volume", "Volume", "", "" , { 0.0f, 1.0f }, 0.5f, {0.0f}, conversionFunction));
+    params.add (addExtParam ("MaxVelocity", "Max Velocity", "", "m/s" , { 0.0f, 1.0f }, 0.5f, {0.0f}, conversionFunction));
+    params.add (addExtParam ("StringDetuning", "String Detuning", "", "%" , { 0.0f, 1.0f }, 0.5f, {0.0f}, conversionFunction));
+    params.add (addExtParam ("BridgeMass", "Bridge Mass", "", "kg" , { 0.0f, 1.0f }, 0.5f, {0.0f}, conversionFunction));
+    params.add (addExtParam ("BridgeSpring", "Bridge Spring", "", "kg/s^2" , { 0.0f, 1.0f }, 0.5f, {0.0f}, conversionFunction));
+    params.add (addExtParam ("Dwgs4", "Dwgs4", "", "" , { 0.0f, 1.0f }, 1.0f, {0.0f}, conversionFunction));
+    params.add (addExtParam ("Downsample", "Downsample", "", "" , { 0.0f, 1.0f }, 0.0f, {0.0f}, conversionFunction));
+    params.add (addExtParam ("LongModes", "Long Modes", "", "", { 0.0f, 1.0f }, 0.0f, {0.0f}, conversionFunction));
 
     init();
 }
