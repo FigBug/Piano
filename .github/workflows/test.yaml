@@ -22,7 +22,7 @@ jobs:
             cmake_generator: Ninja
             cmake_extra: ""
           - os: windows-latest
-            cmake_generator: Visual Studio 17 2022
+            cmake_generator: Visual Studio 18 2026
             cmake_extra: ""
 
     runs-on: ${{ matrix.os }}
