@@ -35,9 +35,13 @@ JuceLibraryCode
 Builds
 .DS_Store
 build-test
+build-tests
+build-ninja-verify
 .claude
 build
 benchmark_results.jsonbin
 Installer/macOS/bin
 Installer/win/bin
 Installer/_flat_presets
+.cache
+build-xcode
