@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1787602363212,
+  "lastUpdate": 1787602508417,
   "repoUrl": "https://github.com/FigBug/Piano",
   "entries": {
     "Piano Performance (Windows)": [
@@ -1583,6 +1583,50 @@ window.BENCHMARK_DATA = {
           {
             "name": "16 voices",
             "value": 16.517,
+            "unit": "x realtime"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "figbug@gmail.com",
+            "name": "Roland Rabien",
+            "username": "FigBug"
+          },
+          "committer": {
+            "email": "figbug@gmail.com",
+            "name": "Roland Rabien",
+            "username": "FigBug"
+          },
+          "distinct": true,
+          "id": "f36eb5fe15ca6df263fb1c7a22b99f00abd86834",
+          "message": "Add CI cmake config script",
+          "timestamp": "2026-08-24T13:08:14-07:00",
+          "tree_id": "29d7720232aa8d80650a0aa02da0f933749b316a",
+          "url": "https://github.com/FigBug/Piano/commit/f36eb5fe15ca6df263fb1c7a22b99f00abd86834"
+        },
+        "date": 1787602505510,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "1 voice",
+            "value": 85.9608,
+            "unit": "x realtime"
+          },
+          {
+            "name": "4 voices",
+            "value": 32.6048,
+            "unit": "x realtime"
+          },
+          {
+            "name": "8 voices",
+            "value": 24.0292,
+            "unit": "x realtime"
+          },
+          {
+            "name": "16 voices",
+            "value": 16.2108,
             "unit": "x realtime"
           }
         ]
