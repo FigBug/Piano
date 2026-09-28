@@ -83,3 +83,4 @@ jobs:
           name: reference-files-${{ matrix.os }}
           path: tests/reference/*.wav
           if-no-files-found: ignore
+          retention-days: 3

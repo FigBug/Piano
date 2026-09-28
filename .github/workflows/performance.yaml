@@ -91,6 +91,7 @@ jobs:
         with:
           name: benchmark-results-${{ matrix.os }}
           path: benchmark_results.json
+          retention-days: 3
 
       # Store benchmark results (only on master branch push)
       - name: Store benchmark result
