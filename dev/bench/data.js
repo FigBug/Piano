@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1791164416349,
+  "lastUpdate": 1791164516156,
   "repoUrl": "https://github.com/FigBug/Piano",
   "entries": {
     "Piano Performance (Windows)": [
@@ -1627,6 +1627,50 @@ window.BENCHMARK_DATA = {
           {
             "name": "16 voices",
             "value": 16.2108,
+            "unit": "x realtime"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "figbug@gmail.com",
+            "name": "Roland Rabien",
+            "username": "FigBug"
+          },
+          "committer": {
+            "email": "figbug@gmail.com",
+            "name": "Roland Rabien",
+            "username": "FigBug"
+          },
+          "distinct": true,
+          "id": "4134228be7c55235adcb88338e8a044a0874a743",
+          "message": "Bump minimum macOS to 12.0 (required by Xcode 27)",
+          "timestamp": "2026-10-04T18:36:43-07:00",
+          "tree_id": "e7dc425d20eeb83873d7e3764f2cc6ca5941b36f",
+          "url": "https://github.com/FigBug/Piano/commit/4134228be7c55235adcb88338e8a044a0874a743"
+        },
+        "date": 1791164513879,
+        "tool": "customBiggerIsBetter",
+        "benches": [
+          {
+            "name": "1 voice",
+            "value": 172.4665,
+            "unit": "x realtime"
+          },
+          {
+            "name": "4 voices",
+            "value": 64.4798,
+            "unit": "x realtime"
+          },
+          {
+            "name": "8 voices",
+            "value": 46.3708,
+            "unit": "x realtime"
+          },
+          {
+            "name": "16 voices",
+            "value": 31.489,
             "unit": "x realtime"
           }
         ]
